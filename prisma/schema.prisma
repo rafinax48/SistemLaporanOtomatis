@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  nama      String
+  nim       String   @unique
+  kelas     String
+  createdAt DateTime @default(now())
+}
+
+model Praktikum {
+  id          String            @id @default(cuid())
+  nama        String
+  totalMinggu Int               @default(10)
+  jadwal      String
+  createdAt   DateTime          @default(now())
+  laporan     LaporanMingguan[]
+}
+
+model LaporanMingguan {
+  id             String    @id @default(cuid())
+  praktikumId    String
+  praktikum      Praktikum @relation(fields: [praktikumId], references: [id], onDelete: Cascade)
+  mingguKe       Int
+  materi         String?
+  tanggal        String?
+  tempat         String?
+  status         String    @default("NOT_STARTED") // NOT_STARTED, PRETEST_DONE, LAPRAK_DONE, COMPLETED, FAILED
+
+  // Data Pretest
+  imgPretest     String?
+  pretestQ       String?
+
+  // Data Laprak
+  imgLaprak      String?
+  kodeProgram    String?
+  laprakBahan    String?   // JSON list
+  laprakLangkah  String?   // JSON list
+  laprakAnalisis String?
+
+  // Data Posttest
+  imgPosttest    String?
+  posttestTujuan String?
+
+  // Hasil Dokumen
+  finalFilename  String?
+  docxPath       String?
+  pdfPath        String?
+
+  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime  @default(now())
+
+  @@unique([praktikumId, mingguKe])
+}
+
+// Model legacy untuk kompatibilitas riwayat sebelumnya
+model Laporan {
+  id           String   @id @default(cuid())
+  namaLaporan  String
+  materi       String
+  tanggal      String
+  tempat       String
+  imgPretest   String?
+  imgLaprak    String?
+  imgPosttest  String?
+  kodeProgram  String?
+  status       String   @default("PENDING")
+  outputPath   String?
+  createdAt    DateTime @default(now())
+}

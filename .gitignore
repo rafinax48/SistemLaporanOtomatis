@@ -1,0 +1,45 @@
+# Node dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Next.js build output
+.next/
+out/
+build/
+dist/
+
+# Environment files (CRITICAL: jangan pernah push API key ke GitHub!)
+.env
+.env*.local
+
+# Database
+dev.db
+dev.db-journal
+*.db
+*.sqlite
+*.sqlite3
+*.tsbuildinfo
+
+# Uploads directory
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Generated documents & test outputs
+*.docx
+*.pdf
+!template*.docx
