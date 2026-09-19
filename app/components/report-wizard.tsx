@@ -1028,32 +1028,35 @@ function LivePreviewPanel({
   ];
 
   return (
-    <div className="bg-white border-2 border-slate-200 rounded-2xl shadow-xl overflow-hidden flex flex-col transition-all">
+    <div className="paper-card-elevated border border-slate-200/90 rounded-2xl shadow-xl overflow-hidden flex flex-col transition-all paper-realistic-shadow">
       {/* Top Bar Preview */}
-      <div className="px-4 py-3 bg-[#002b66] text-white flex items-center justify-between">
+      <div className="px-4 py-3 bg-gradient-to-r from-[#001f4d] via-[#002b66] to-[#003882] text-white flex items-center justify-between border-b border-blue-900/50">
         <div className="flex items-center space-x-2.5">
-          <Eye className="w-4 h-4 text-amber-300 animate-pulse" />
+          <div className="relative flex items-center justify-center">
+            <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-amber-400 opacity-60"></span>
+            <Eye className="w-4 h-4 text-amber-300 relative z-10" />
+          </div>
           <div>
             <div className="text-xs font-black tracking-wide flex items-center space-x-2">
               <span>Preview Ekstraksi Halaman</span>
-              <span className="bg-amber-400 text-[#002b66] text-[10px] font-black px-1.5 py-0.2 rounded shadow-xs">
+              <span className="bg-amber-400 text-[#002b66] text-[10px] font-black px-1.5 py-0.5 rounded shadow-xs">
                 {totalDocPages} Halaman A4
               </span>
             </div>
-            <p className="text-[10px] text-blue-200">
+            <p className="text-[10px] text-blue-200/90 font-medium">
               Format persis sesuai hasil generate Word & PDF (Calibri 11pt)
             </p>
           </div>
         </div>
 
         {/* View Mode Toggle: Grid (iLovePDF) vs Single Continuous */}
-        <div className="flex items-center bg-[#001f4d] p-1 rounded-lg border border-blue-800 text-[11px] font-bold">
+        <div className="flex items-center bg-[#00183b] p-1 rounded-xl border border-blue-800/60 text-[11px] font-bold">
           <button
             type="button"
             onClick={() => setViewMode("grid")}
-            className={`px-2.5 py-1 rounded transition-colors flex items-center space-x-1 ${
+            className={`px-2.5 py-1 rounded-lg transition-all flex items-center space-x-1 ${
               viewMode === "grid"
-                ? "bg-amber-400 text-[#002b66] shadow-2xs"
+                ? "bg-amber-400 text-[#002b66] shadow-xs"
                 : "text-blue-200 hover:text-white"
             }`}
           >
@@ -1062,9 +1065,9 @@ function LivePreviewPanel({
           <button
             type="button"
             onClick={() => setViewMode("sheet")}
-            className={`px-2.5 py-1 rounded transition-colors flex items-center space-x-1 ${
+            className={`px-2.5 py-1 rounded-lg transition-all flex items-center space-x-1 ${
               viewMode === "sheet"
-                ? "bg-amber-400 text-[#002b66] shadow-2xs"
+                ? "bg-amber-400 text-[#002b66] shadow-xs"
                 : "text-blue-200 hover:text-white"
             }`}
           >
@@ -1082,7 +1085,7 @@ function LivePreviewPanel({
           <button
             type="button"
             onClick={onResetCurrent}
-            className="px-2.5 py-1.5 rounded-lg border border-rose-200 bg-white hover:bg-rose-50 text-rose-700 text-xs font-bold transition-all flex items-center space-x-1 shadow-2xs"
+            className="px-2.5 py-1.5 rounded-lg border border-rose-200 bg-white hover:bg-rose-50 text-rose-700 text-xs font-bold transition-all flex items-center space-x-1 shadow-2xs cursor-pointer active:scale-95"
             title="Dibersihkan untuk input ulang jika ada kesalahan"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -1091,17 +1094,17 @@ function LivePreviewPanel({
           <button
             type="button"
             onClick={onConfirmNext}
-            className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center space-x-1.5 shadow-md shadow-emerald-600/20"
+            className="btn-success px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 shadow-md shadow-emerald-600/20 cursor-pointer"
             title="Lanjut ke tahap berikutnya jika sudah sesuai"
           >
-            <Check className="w-3.5 h-3.5" />
+            <Check className="w-3.5 h-3.5 stroke-[2.5]" />
             <span>Konfirmasi & Lanjut</span>
           </button>
         </div>
       </div>
 
       {/* Content Area: Grid View (iLovePDF Style) OR Continuous Sheet */}
-      <div className="p-4 bg-slate-100 max-h-[620px] overflow-y-auto">
+      <div className="p-4 bg-slate-100/90 max-h-[620px] overflow-y-auto">
         {viewMode === "grid" ? (
           /* iLovePDF-STYLE GRID OF DOCUMENT PAGES */
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1109,16 +1112,16 @@ function LivePreviewPanel({
               <div
                 key={page.id}
                 onClick={() => setZoomedPage(page.id)}
-                className="group cursor-pointer flex flex-col items-center transition-all transform hover:-translate-y-1"
+                className="group cursor-pointer flex flex-col items-center transition-all duration-200 transform hover:-translate-y-1"
               >
                 {/* A4 Sheet Thumbnail Container */}
-                <div className="w-full aspect-[1/1.414] bg-white border-2 border-slate-300 rounded-lg shadow-md group-hover:border-[#002b66] group-hover:shadow-xl overflow-hidden relative transition-all">
+                <div className="w-full aspect-[1/1.414] bg-white border border-slate-300 rounded-xl shadow-md group-hover:border-[#002b66] group-hover:shadow-xl group-hover:ring-2 group-hover:ring-[#002b66]/20 overflow-hidden relative transition-all duration-200">
                   {page.render()}
 
                   {/* Hover Overlay with Zoom Icon */}
-                  <div className="absolute inset-0 bg-[#002b66]/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                    <span className="bg-[#002b66] text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-md flex items-center space-x-1">
-                      <Eye className="w-3 h-3 text-amber-300" />
+                  <div className="absolute inset-0 bg-[#002b66]/15 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none backdrop-blur-[0.5px]">
+                    <span className="bg-[#002b66] text-amber-300 text-[10px] font-bold px-2.5 py-1.5 rounded-full shadow-lg flex items-center space-x-1.5 border border-amber-400/40 transform scale-95 group-hover:scale-100 transition-transform">
+                      <Eye className="w-3.5 h-3.5" />
                       <span>Perbesar Halaman</span>
                     </span>
                   </div>
@@ -1126,7 +1129,7 @@ function LivePreviewPanel({
 
                 {/* File/Page Badge underneath thumbnail like iLovePDF */}
                 <div className="mt-2 text-center w-full px-1">
-                  <div className="text-[11px] font-bold text-slate-800 truncate group-hover:text-[#002b66]">
+                  <div className="text-[11px] font-bold text-slate-800 truncate group-hover:text-[#002b66] transition-colors">
                     {page.title}
                   </div>
                   <div className="text-[10px] text-slate-500 font-medium">
@@ -1772,21 +1775,23 @@ export function ReportWizard({
   return (
     <div className="min-h-screen bg-slate-100/60 pb-20">
       {/* Top Navbar */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">
+      <header className="glass-header border-b border-slate-200/80 sticky top-0 z-40 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">
           <Link
             href={`/praktikum/${praktikum.id}`}
-            className="inline-flex items-center space-x-2 text-xs font-bold text-[#002b66] hover:text-amber-600 transition-colors p-2 -ml-2 rounded-lg hover:bg-slate-50"
+            className="group inline-flex items-center space-x-2 text-xs font-bold text-[#002b66] hover:text-amber-600 transition-colors py-2 px-3 -ml-2 rounded-xl hover:bg-slate-100/70 border border-transparent hover:border-slate-200/60"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
             <span>Kembali ke Tabel Mingguan</span>
           </Link>
           <div className="flex items-center space-x-3">
-            <img
-              src="/uad_logo.png"
-              alt="Logo UAD"
-              className="w-9 h-9 object-contain drop-shadow-xs"
-            />
+            <div className="p-1.5 rounded-xl bg-white/80 shadow-xs border border-slate-200/60">
+              <img
+                src="/uad_logo.png"
+                alt="Logo UAD"
+                className="w-8 h-8 object-contain drop-shadow-xs"
+              />
+            </div>
             <div className="text-right">
               <span className="text-xs font-extrabold text-[#002b66] block">{praktikum.nama}</span>
               <span className="text-[11px] text-amber-700 font-bold">Laporan Minggu ke-{mingguKe} · UAD</span>
@@ -1796,7 +1801,7 @@ export function ReportWizard({
       </header>
 
       {/* Stepper Progress Bar */}
-      <div className="bg-white border-b border-slate-200 py-4 shadow-2xs">
+      <div className="bg-white/90 backdrop-blur-md border-b border-slate-200/80 py-3.5 shadow-2xs sticky top-18 z-30">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between">
             {[
@@ -1808,29 +1813,33 @@ export function ReportWizard({
               <div key={step.num} className="flex items-center flex-1">
                 <button
                   onClick={() => setCurrentStep(step.num)}
-                  className={`flex items-center space-x-2.5 text-xs font-bold transition-colors ${
+                  className={`group flex items-center space-x-2.5 text-xs font-bold transition-all ${
                     currentStep === step.num
                       ? "text-[#002b66]"
                       : currentStep > step.num
-                      ? "text-emerald-600"
-                      : "text-slate-400"
+                      ? "text-emerald-700"
+                      : "text-slate-400 hover:text-slate-600"
                   }`}
                 >
                   <span
-                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-extrabold transition-all duration-200 ${
                       currentStep === step.num
-                        ? "bg-[#002b66] text-amber-300 shadow-md shadow-[#002b66]/20"
+                        ? "bg-[#002b66] text-amber-300 ring-2 ring-amber-400 ring-offset-2 shadow-md shadow-[#002b66]/25 scale-105"
                         : currentStep > step.num
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-slate-100 text-slate-400"
+                        ? "bg-emerald-100 text-emerald-700 border border-emerald-300"
+                        : "bg-slate-100 text-slate-400 group-hover:bg-slate-200"
                     }`}
                   >
-                    {currentStep > step.num ? <Check className="w-4 h-4" /> : step.num}
+                    {currentStep > step.num ? <Check className="w-4 h-4 stroke-[2.5]" /> : step.num}
                   </span>
-                  <span className="hidden sm:inline">{step.title}</span>
+                  <span className="hidden sm:inline tracking-tight font-bold">{step.title}</span>
                 </button>
                 {idx < 3 && (
-                  <div className="flex-1 mx-4 h-0.5 bg-slate-200 hidden sm:block" />
+                  <div
+                    className={`flex-1 mx-3 sm:mx-4 h-1 rounded-full hidden sm:block transition-all duration-300 ${
+                      currentStep > idx + 1 ? "bg-emerald-500" : "bg-slate-200"
+                    }`}
+                  />
                 )}
               </div>
             ))}
@@ -1904,13 +1913,13 @@ export function ReportWizard({
                         type="button"
                         onClick={runPretestAI}
                         disabled={analyzingPretest}
-                        className="btn-primary py-2.5 px-4 text-xs font-bold"
+                        className="btn-ai-sparkle py-2.5 px-4 text-xs font-bold"
                       >
-                        <Sparkles className="w-4 h-4 text-amber-300" />
-                        <span>{analyzingPretest ? "AI Sedang Menganalisis..." : "Ekstraksi Soal Pretest via AI"}</span>
+                        <Sparkles className={`w-4 h-4 text-amber-300 ${analyzingPretest ? "animate-spin" : "animate-pulse"}`} />
+                        <span>{analyzingPretest ? "AI Sedang Membaca Soal Pretest..." : "Ekstraksi Soal Pretest via AI"}</span>
                       </button>
-                      <span className="text-xs text-slate-500">
-                        * AI akan membaca soal dan merapikan pertanyaan pretest secara otomatis.
+                      <span className="text-xs text-slate-500 font-medium">
+                        * AI membaca & menyusun pertanyaan pretest secara teratur dengan format A, B, C.
                       </span>
                     </div>
 
@@ -2010,12 +2019,12 @@ export function ReportWizard({
                         type="button"
                         onClick={runLaprakAI}
                         disabled={analyzingLaprak}
-                        className="btn-primary py-2.5 px-4 text-xs font-bold"
+                        className="btn-ai-sparkle py-2.5 px-4 text-xs font-bold"
                       >
-                        <Sparkles className="w-4 h-4 text-amber-300" />
-                        <span>{analyzingLaprak ? "AI Sedang Menganalisis..." : "Analisis Hasil & Buat Ulasan Laprak"}</span>
+                        <Sparkles className={`w-4 h-4 text-amber-300 ${analyzingLaprak ? "animate-spin" : "animate-pulse"}`} />
+                        <span>{analyzingLaprak ? "AI Sedang Menganalisis Logika & Output..." : "Analisis Hasil & Buat Ulasan Laprak"}</span>
                       </button>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-slate-500 font-medium">
                         * Menghasilkan Alat & Bahan, Langkah Kerja, dan Analisis otomatis.
                       </span>
                     </div>
@@ -2076,10 +2085,10 @@ export function ReportWizard({
                               type="button"
                               onClick={runGenerateBahanAI}
                               disabled={generatingBahan}
-                              className="btn-primary py-1 px-2.5 text-[11px] font-bold shrink-0 ml-2"
+                              className="btn-ai-sparkle py-1 px-3 text-[11px] font-bold shrink-0 ml-2"
                             >
-                              <Sparkles className="w-3 h-3 text-amber-300" />
-                              <span>{generatingBahan ? "Menghitung..." : "Generate Ulang"}</span>
+                              <Sparkles className={`w-3 h-3 text-amber-300 ${generatingBahan ? "animate-spin" : ""}`} />
+                              <span>{generatingBahan ? "Mendeteksi..." : "Generate Ulang"}</span>
                             </button>
                           </div>
                         )}
@@ -2158,9 +2167,9 @@ export function ReportWizard({
                               type="button"
                               onClick={runGenerateLangkahAI}
                               disabled={generatingLangkah}
-                              className="btn-primary py-1 px-2.5 text-[11px] font-bold shrink-0 ml-2"
+                              className="btn-ai-sparkle py-1 px-3 text-[11px] font-bold shrink-0 ml-2"
                             >
-                              <Sparkles className="w-3 h-3 text-amber-300" />
+                              <Sparkles className={`w-3 h-3 text-amber-300 ${generatingLangkah ? "animate-spin" : ""}`} />
                               <span>{generatingLangkah ? "Menyusun..." : "Generate Ulang"}</span>
                             </button>
                           </div>
@@ -2238,9 +2247,9 @@ export function ReportWizard({
                               type="button"
                               onClick={runGenerateAnalisisAI}
                               disabled={generatingAnalisis}
-                              className="btn-primary py-1 px-2.5 text-[11px] font-bold shrink-0 ml-2"
+                              className="btn-ai-sparkle py-1 px-3 text-[11px] font-bold shrink-0 ml-2"
                             >
-                              <Sparkles className="w-3 h-3 text-amber-300" />
+                              <Sparkles className={`w-3 h-3 text-amber-300 ${generatingAnalisis ? "animate-spin" : ""}`} />
                               <span>{generatingAnalisis ? "Menyusun..." : "Generate Ulang"}</span>
                             </button>
                           </div>
@@ -2340,13 +2349,13 @@ export function ReportWizard({
                         type="button"
                         onClick={runPosttestAI}
                         disabled={analyzingPosttest}
-                        className="btn-primary py-2.5 px-4 text-xs font-bold"
+                        className="btn-ai-sparkle py-2.5 px-4 text-xs font-bold"
                       >
-                        <Sparkles className="w-4 h-4 text-amber-300" />
-                        <span>{analyzingPosttest ? "AI Sedang Menganalisis..." : "Ekstraksi Tujuan Posttest via AI"}</span>
+                        <Sparkles className={`w-4 h-4 text-amber-300 ${analyzingPosttest ? "animate-spin" : "animate-pulse"}`} />
+                        <span>{analyzingPosttest ? "AI Sedang Menganalisis Output Posttest..." : "Ekstraksi Tujuan Posttest via AI"}</span>
                       </button>
-                      <span className="text-xs text-slate-500">
-                        * Menyusun narasi tujuan pembuatan program posttest.
+                      <span className="text-xs text-slate-500 font-medium">
+                        * Menyusun narasi tujuan dan analisis program posttest secara otomatis.
                       </span>
                     </div>
 
@@ -2496,14 +2505,17 @@ export function ReportWizard({
                     type="button"
                     onClick={handleFinalize}
                     disabled={isGenerating}
-                    className="btn-primary w-full py-3.5 text-sm font-bold shadow-lg shadow-[#002b66]/20"
+                    className="btn-gold w-full py-4 text-sm font-extrabold shadow-xl shadow-amber-500/25 flex items-center justify-center space-x-2.5 cursor-pointer active:scale-[0.99] transition-all"
                   >
                     {isGenerating ? (
-                      <span>Sedang Menyusun Dokumen DOCX & PDF Sesuai Urutan...</span>
+                      <span className="flex items-center space-x-2 text-[#002b66]">
+                        <Sparkles className="w-5 h-5 animate-spin" />
+                        <span>Sedang Menyusun Dokumen DOCX & PDF Sesuai Format Resmi UAD...</span>
+                      </span>
                     ) : (
                       <>
-                        <Sparkles className="w-4 h-4 text-amber-300" />
-                        <span>Generate Dokumen Laporan (Word & PDF)</span>
+                        <Sparkles className="w-5 h-5 text-[#002b66]" />
+                        <span>Generate Dokumen Laporan Lengkap (Word & PDF)</span>
                       </>
                     )}
                   </button>

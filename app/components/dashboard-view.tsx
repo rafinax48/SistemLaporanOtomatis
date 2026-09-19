@@ -237,55 +237,65 @@ export function DashboardView({
     reader.readAsDataURL(file);
   };
 
+  const totalCompleted = list.reduce((acc, p) => acc + (p.completedCount || 0), 0);
+  const totalRequired = list.reduce((acc, p) => acc + (p.totalMinggu || 0), 0);
+  const overallPercent = totalRequired > 0 ? Math.round((totalCompleted / totalRequired) * 100) : 0;
+  const totalRemaining = Math.max(0, totalRequired - totalCompleted);
+
   return (
-    <div className="min-h-screen bg-slate-100/60 pb-20">
-      {/* Top Navbar dengan Identitas Universitas Ahmad Dahlan */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+    <div className="min-h-screen bg-slate-50/50 pb-24">
+      {/* Top Navbar dengan Glassmorphism & Identitas Universitas Ahmad Dahlan */}
+      <header className="glass-header sticky top-0 z-40 shadow-xs transition-all">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
           <div className="flex items-center space-x-3.5">
-            <img
-              src="/uad_logo.png"
-              alt="Logo Universitas Ahmad Dahlan"
-              className="w-11 h-11 object-contain drop-shadow-sm"
-            />
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-amber-500 rounded-full blur opacity-25 group-hover:opacity-60 transition duration-300"></div>
+              <img
+                src="/uad_logo.png"
+                alt="Logo Universitas Ahmad Dahlan"
+                className="relative w-11 h-11 object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-105"
+              />
+            </div>
             <div>
               <div className="flex items-center space-x-2">
                 <h1 className="font-extrabold text-[#002b66] text-base leading-tight tracking-tight uppercase">
                   Universitas Ahmad Dahlan
                 </h1>
-                <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                  UAD Yogyakarta
+                <span className="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 shadow-2xs">
+                  FTI Informatika
                 </span>
               </div>
               <p className="text-xs text-slate-500 font-medium">
-                Sistem Laporan Praktikum · Fakultas Teknologi Industri
+                Sistem Pembuatan Laporan Praktikum Otomatis
               </p>
             </div>
           </div>
 
-          {/* Mahasiswa Profile Pill & Tombol Edit Hanya Berupa Pensil */}
-          <div className="flex items-center space-x-2.5">
+          {/* Mahasiswa Profile Pill & Tombol Edit */}
+          <div className="flex items-center space-x-3">
             <div className="text-right hidden sm:block">
-              <p className="text-xs font-bold text-slate-900">{profile.nama}</p>
+              <p className="text-xs font-bold text-slate-900 leading-snug">{profile.nama}</p>
               <p className="text-[11px] font-mono text-slate-500">
                 NIM: {profile.nim} • Kelas {profile.kelas}
               </p>
             </div>
 
-            {/* Avatar (Foto atau Inisial) */}
-            <div className="w-10 h-10 rounded-full bg-[#002b66] border-2 border-amber-400/50 flex items-center justify-center text-xs font-bold text-amber-300 shadow-sm overflow-hidden flex-shrink-0">
-              {profile.foto ? (
-                <img
-                  src={profile.foto}
-                  alt={profile.nama}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                profile.nama.charAt(0).toUpperCase()
-              )}
+            {/* Avatar Profile */}
+            <div className="relative group">
+              <div className="w-10 h-10 rounded-full bg-[#002b66] border-2 border-amber-400 flex items-center justify-center text-xs font-bold text-amber-300 shadow-sm overflow-hidden flex-shrink-0 transition-transform duration-200 group-hover:scale-105">
+                {profile.foto ? (
+                  <img
+                    src={profile.foto}
+                    alt={profile.nama}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  profile.nama.charAt(0).toUpperCase()
+                )}
+              </div>
             </div>
 
-            {/* Tombol Edit Profil: HANYA BERUPA PENSIL SAJA */}
+            {/* Tombol Edit Profil */}
             <button
               onClick={() => {
                 setEditNamaUser(profile.nama);
@@ -295,11 +305,11 @@ export function DashboardView({
                 setEditProfileError(null);
                 setShowEditProfileModal(true);
               }}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-[#002b66] hover:bg-blue-50 border border-slate-200 hover:border-[#002b66]/30 transition-all shadow-2xs bg-white"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-[#002b66] hover:bg-amber-50/80 border border-slate-200 hover:border-amber-300 transition-all shadow-2xs bg-white active:scale-95"
               title="Edit Profil Mahasiswa"
               aria-label="Edit Profil Mahasiswa"
             >
-              <Pencil className="w-3.5 h-3.5 text-amber-500" />
+              <Pencil className="w-3.5 h-3.5 text-amber-600" />
             </button>
           </div>
         </div>
@@ -309,7 +319,7 @@ export function DashboardView({
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         {/* Toast Notifikasi */}
         {toastMessage && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="mb-6 p-4 rounded-xl bg-emerald-50/90 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-center space-x-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
               <span>{toastMessage}</span>
@@ -320,31 +330,88 @@ export function DashboardView({
           </div>
         )}
 
-        {/* Banner Section - UAD Deep Navy & Gold */}
-        <div className="rounded-2xl p-6 sm:p-8 bg-gradient-to-r from-[#002b66] via-[#0a3a78] to-[#001f4d] text-white mb-8 relative overflow-hidden shadow-lg shadow-[#002b66]/20 border border-[#002b66]/20">
+        {/* Hero Banner Section - UAD Deep Navy & Gold */}
+        <div className="rounded-2xl p-6 sm:p-8 bg-gradient-to-r from-[#002b66] via-[#093977] to-[#001f4d] text-white mb-8 relative overflow-hidden shadow-xl shadow-[#002b66]/15 border border-white/10">
+          {/* Subtle Ambient Radial Glow */}
+          <div className="absolute -right-10 -bottom-10 w-72 h-72 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-15 flex items-center justify-center pointer-events-none pr-8">
             <img src="/uad_logo.png" alt="UAD Watermark" className="w-72 h-72 object-contain" />
           </div>
 
           <div className="relative z-10 max-w-2xl">
-            <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-400/20 text-amber-300 border border-amber-400/40 mb-3">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-amber-300 border border-amber-400/30 backdrop-blur-md mb-3.5 shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
               <span>Portal Akademik Praktikum UAD</span>
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
               Selamat Datang, {profile.nama.split(" ")[0]}!
             </h2>
-            <p className="mt-2 text-sm text-blue-100 leading-relaxed">
-              Kelola praktikum dan susun laporan mingguan Anda sesuai format standar resmi Universitas Ahmad Dahlan, mulai dari Pretest, Hasil Laprak, hingga Posttest otomatis berbasis DOCX & PDF.
+            <p className="mt-2 text-xs sm:text-sm text-blue-100 leading-relaxed font-normal">
+              Susun dan hasilkan dokumen laporan mingguan Anda dengan format resmi UAD. Dilengkapi ekstraksi kecerdasan buatan Google Gemini Vision untuk soal Pretest, observasi Laprak, serta ekspor DOCX & PDF siap cetak.
             </p>
+          </div>
+        </div>
+
+        {/* 4 Interactive Metric Summary Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {/* Card 1: Total Praktikum */}
+          <div className="paper-card p-4 sm:p-5 flex items-center space-x-3.5 border-slate-200/90 hover:border-[#002b66]/30 transition-all">
+            <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#002b66] flex items-center justify-center flex-shrink-0 shadow-2xs">
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Praktikum</p>
+              <p className="text-xl font-extrabold text-slate-900 mt-0.5">{list.length} Mata Kuliah</p>
+            </div>
+          </div>
+
+          {/* Card 2: Laporan Selesai */}
+          <div className="paper-card p-4 sm:p-5 flex items-center space-x-3.5 border-slate-200/90 hover:border-emerald-300 transition-all">
+            <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 shadow-2xs">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Laporan Selesai</p>
+              <p className="text-xl font-extrabold text-slate-900 mt-0.5">{totalCompleted} Dokumen</p>
+            </div>
+          </div>
+
+          {/* Card 3: Progres Semester */}
+          <div className="paper-card p-4 sm:p-5 flex items-center space-x-3.5 border-slate-200/90 hover:border-amber-300 transition-all">
+            <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0 shadow-2xs">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Progres Total</p>
+                <span className="text-xs font-extrabold text-amber-700">{overallPercent}%</span>
+              </div>
+              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mt-1.5">
+                <div
+                  className="bg-gradient-to-r from-amber-400 to-amber-500 h-full rounded-full transition-all duration-700"
+                  style={{ width: `${overallPercent}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 4: Sisa Laporan */}
+          <div className="paper-card p-4 sm:p-5 flex items-center space-x-3.5 border-slate-200/90 hover:border-indigo-300 transition-all">
+            <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 shadow-2xs">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Sisa Pelaporan</p>
+              <p className="text-xl font-extrabold text-slate-900 mt-0.5">{totalRemaining} Minggu</p>
+            </div>
           </div>
         </div>
 
         {/* Action Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-extrabold text-[#002b66]">
-              Praktikum Terdaftar
+            <h3 className="text-xl font-extrabold text-[#002b66] tracking-tight">
+              Mata Kuliah Praktikum
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
               Pilih praktikum untuk menginput laporan mingguan atau kelola mata kuliah yang ada
@@ -353,7 +420,7 @@ export function DashboardView({
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="btn-primary py-2.5 px-4 text-xs font-bold shadow-sm"
+            className="btn-primary py-2.5 px-4 text-xs font-bold shadow-md shadow-[#002b66]/15"
           >
             <Plus className="w-4 h-4 text-amber-400" />
             <span>Tambah Praktikum</span>
@@ -373,16 +440,16 @@ export function DashboardView({
               <Link
                 key={item.id}
                 href={`/praktikum/${item.id}`}
-                className="paper-card p-6 hover:shadow-md hover:border-[#002b66]/40 transition-all flex flex-col justify-between group relative overflow-hidden bg-white border-slate-200"
+                className="paper-card-interactive p-6 flex flex-col justify-between group relative overflow-hidden bg-white border-slate-200"
               >
                 <div>
                   <div className="flex items-start justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#002b66] flex items-center justify-center font-bold text-sm mb-4 group-hover:bg-[#002b66] group-hover:text-amber-400 transition-colors">
+                    <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#002b66] flex items-center justify-center font-bold text-sm mb-4 group-hover:bg-[#002b66] group-hover:text-amber-400 transition-colors shadow-2xs">
                       <BookOpen className="w-5 h-5" />
                     </div>
 
                     <div className="flex items-center space-x-1.5">
-                      <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full">
+                      <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200/60">
                         {item.totalMinggu} Minggu
                       </span>
 
@@ -420,34 +487,34 @@ export function DashboardView({
                     </div>
                   </div>
 
-                  <h4 className="font-bold text-slate-900 text-lg group-hover:text-[#002b66] transition-colors leading-snug">
+                  <h4 className="font-extrabold text-slate-900 text-lg group-hover:text-[#002b66] transition-colors leading-snug">
                     {item.nama}
                   </h4>
 
                   <div className="mt-3 flex items-center space-x-2 text-xs text-slate-500">
                     <Clock className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />
-                    <span className="truncate">{item.jadwal || "Sesuai Jadwal Lab"}</span>
+                    <span className="truncate font-medium">{item.jadwal || "Sesuai Jadwal Lab"}</span>
                   </div>
                 </div>
 
                 {/* Progress Bar */}
                 <div className="mt-6 pt-4 border-t border-slate-100">
-                  <div className="flex items-center justify-between text-xs mb-1.5">
+                  <div className="flex items-center justify-between text-xs mb-2">
                     <span className="text-slate-500 font-medium">Progres Laporan:</span>
-                    <span className="font-bold text-slate-900">
+                    <span className="font-extrabold text-slate-900">
                       {item.completedCount} / {item.totalMinggu} Selesai
                     </span>
                   </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                     <div
-                      className="bg-[#002b66] h-full rounded-full transition-all duration-500"
+                      className="bg-gradient-to-r from-[#002b66] to-blue-700 h-full rounded-full transition-all duration-500"
                       style={{ width: `${item.progressPercent || 0}%` }}
                     />
                   </div>
 
-                  <div className="mt-4 flex items-center justify-end text-xs font-bold text-[#002b66] group-hover:text-amber-600 group-hover:translate-x-1 transition-all">
+                  <div className="mt-4 flex items-center justify-end text-xs font-bold text-[#002b66] group-hover:text-amber-600 transition-all">
                     <span>Buka Tabel Mingguan</span>
-                    <ArrowRight className="w-4 h-4 ml-1" />
+                    <ArrowRight className="w-4 h-4 ml-1.5 transform group-hover:translate-x-1.5 transition-transform" />
                   </div>
                 </div>
               </Link>

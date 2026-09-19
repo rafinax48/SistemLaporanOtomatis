@@ -64,11 +64,14 @@ export function OnboardingView({ onComplete }: { onComplete: () => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100/60 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+    <div className="min-h-screen relative overflow-hidden py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+      {/* Ambient background decoration */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[350px] bg-gradient-to-tr from-blue-400/10 via-amber-300/10 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
+
       <div className="max-w-2xl w-full">
         {/* Header Branding Universitas Ahmad Dahlan */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center mb-3">
+          <div className="inline-flex items-center justify-center p-2 rounded-2xl bg-white/80 backdrop-blur-md shadow-lg shadow-blue-950/5 border border-slate-100 mb-3 group hover:scale-105 transition-transform duration-300">
             <img
               src="/uad_logo.png"
               alt="Logo Universitas Ahmad Dahlan"
@@ -81,13 +84,13 @@ export function OnboardingView({ onComplete }: { onComplete: () => void }) {
           <p className="text-sm font-semibold text-amber-700 mt-0.5">
             Fakultas Teknologi Industri · Program Studi Informatika
           </p>
-          <p className="mt-2 text-xs text-slate-600 max-w-md mx-auto">
+          <p className="mt-2 text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
             Selamat datang di Portal Generator Laporan Praktikum Otomatis (DOCX & PDF). Silakan lengkapi identitas mahasiswa dan mata kuliah praktikum pertama Anda.
           </p>
         </div>
 
         {/* Form Container */}
-        <div className="paper-card-elevated p-8 sm:p-10 border-slate-200">
+        <div className="paper-card-elevated p-8 sm:p-10 border border-slate-200/80 shadow-xl backdrop-blur-xs">
           {errorMsg && (
             <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -98,8 +101,8 @@ export function OnboardingView({ onComplete }: { onComplete: () => void }) {
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Bagian 1: Identitas Mahasiswa */}
             <div>
-              <div className="flex items-center space-x-2 pb-3 border-b border-slate-200 mb-4">
-                <span className="w-6 h-6 rounded-full bg-blue-100 text-[#002b66] font-bold text-xs flex items-center justify-center">
+              <div className="flex items-center space-x-2.5 pb-3 border-b border-slate-200/80 mb-4">
+                <span className="w-7 h-7 rounded-lg bg-[#002b66] text-amber-300 font-bold text-xs flex items-center justify-center shadow-xs">
                   1
                 </span>
                 <h2 className="text-sm font-bold uppercase tracking-wider text-[#002b66]">
@@ -149,8 +152,8 @@ export function OnboardingView({ onComplete }: { onComplete: () => void }) {
 
             {/* Bagian 2: Setup Praktikum Pertama */}
             <div>
-              <div className="flex items-center space-x-2 pb-3 border-b border-slate-200 mb-4">
-                <span className="w-6 h-6 rounded-full bg-blue-100 text-[#002b66] font-bold text-xs flex items-center justify-center">
+              <div className="flex items-center space-x-2.5 pb-3 border-b border-slate-200/80 mb-4">
+                <span className="w-7 h-7 rounded-lg bg-[#002b66] text-amber-300 font-bold text-xs flex items-center justify-center shadow-xs">
                   2
                 </span>
                 <h2 className="text-sm font-bold uppercase tracking-wider text-[#002b66]">
