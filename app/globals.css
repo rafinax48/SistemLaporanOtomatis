@@ -153,6 +153,12 @@ body {
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.paper-input.pl-9,
+.paper-input.pl-10,
+.paper-input-icon {
+  padding-left: 2.6rem !important;
+}
+
 .paper-input:focus {
   border-color: #002b66;
   box-shadow: 0 0 0 3px rgba(0, 43, 102, 0.12);

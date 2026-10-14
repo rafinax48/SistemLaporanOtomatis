@@ -21,8 +21,11 @@ import {
   ArrowUp,
   ArrowDown,
   Image as ImageIcon,
-  Camera
+  Camera,
+  Settings,
+  X
 } from "lucide-react";
+import { AiSettingsModal } from "./ai-settings-modal";
 
 export interface OrderedImage {
   id: string;
@@ -130,6 +133,75 @@ function parseInitialCodes(
     title: defaultTitle,
     code: defaultCode
   }];
+}
+
+function getDefaultCodeTemplate(praktikumNama: string, mingguKe: number, isPosttest: boolean = false): string {
+  const combined = (praktikumNama || "").toLowerCase();
+  const label = isPosttest ? "Posttest" : "Praktikum";
+
+  if (combined.includes("keamanan") || combined.includes("security") || combined.includes("kripto") || combined.includes("crypto")) {
+    return `# Praktikum Keamanan Komputer - Minggu ${mingguKe}\n# Program ${label}: Kriptografi & Keamanan Data\nimport hashlib\n\ndef hash_sha256(pesan: str) -> str:\n    """Fungsi hashing SHA-256 untuk memverifikasi integritas data."""\n    return hashlib.sha256(pesan.encode('utf-8')).hexdigest()\n\nif __name__ == "__main__":\n    data_uji = "Praktikum Keamanan Komputer UAD"\n    print(f"Data Asli (Plaintext) : {data_uji}")\n    print(f"Hasil Hash (SHA-256)   : {hash_sha256(data_uji)}")\n`;
+  }
+
+  if (combined.includes("basis data") || combined.includes("database") || combined.includes("sql")) {
+    return `-- Praktikum Basis Data - Minggu ${mingguKe}\n-- Program ${label}: Skema Entitas Relasional & Kueri Data\nCREATE TABLE Mahasiswa (\n    nim VARCHAR(10) PRIMARY KEY,\n    nama VARCHAR(100) NOT NULL,\n    kelas VARCHAR(5) NOT NULL\n);\n\nINSERT INTO Mahasiswa (nim, nama, kelas) VALUES ('2400018208', 'Rafi Satya Prayoga', 'D');\nSELECT * FROM Mahasiswa;\n`;
+  }
+
+  if (combined.includes("jaringan") || combined.includes("network") || combined.includes("cisco")) {
+    return `# Praktikum Jaringan Komputer - Minggu ${mingguKe}\n# Program ${label}: Socket Programming & Transmisi Paket\nimport socket\n\nclient_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\nprint("Socket jaringan berhasil dibuat dan siap untuk transmisi data.")\n`;
+  }
+
+  if (combined.includes("web") || combined.includes("frontend") || combined.includes("backend")) {
+    return `// Praktikum Pemrograman Web - Minggu ${mingguKe}\n// Program ${label}\nconsole.log("Praktikum Pemrograman Web FTI UAD Minggu ${mingguKe}");\n`;
+  }
+
+  return `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Implementasi ${label} Minggu ${mingguKe}" << endl;\n    return 0;\n}\n`;
+}
+
+function getDefaultToolsAndMaterials(praktikumNama: string): string {
+  const combined = (praktikumNama || "").toLowerCase();
+  if (combined.includes("keamanan") || combined.includes("security") || combined.includes("kripto")) {
+    return "Perangkat Keras PC / Laptop, Sistem Operasi Komputer (Linux / Windows), Interpreter Python 3.x, Visual Studio Code / Terminal, Pustaka hashlib";
+  }
+  if (combined.includes("basis data") || combined.includes("database") || combined.includes("sql")) {
+    return "Perangkat Keras PC / Laptop, Sistem Operasi Komputer, RDBMS MySQL / MariaDB Server 8.0+, phpMyAdmin / DBeaver / Terminal SQL";
+  }
+  if (combined.includes("jaringan") || combined.includes("network")) {
+    return "Perangkat Keras PC / Laptop, Sistem Operasi Komputer, Cisco Packet Tracer / Wireshark Protocol Analyzer, Terminal Jaringan";
+  }
+  if (combined.includes("web")) {
+    return "Perangkat Keras PC / Laptop, Sistem Operasi, Browser Google Chrome, Visual Studio Code, Node.js Runtime";
+  }
+  return "Perangkat Keras PC / Laptop, Compiler C++ (Dev-C++ / GCC), Library standar <iostream>";
+}
+
+function getDefaultWorkSteps(praktikumNama: string, mingguKe: number): string {
+  const combined = (praktikumNama || "").toLowerCase();
+  if (combined.includes("keamanan") || combined.includes("security") || combined.includes("kripto")) {
+    return formatLangkahKerja(
+      `- Menyiapkan lingkungan pengembangan Python 3.x pada PC/Laptop dan membuka Visual Studio Code.\n- Membuat file lembar kerja baru sesuai modul praktikum Keamanan Komputer Minggu ${mingguKe}.\n- Mengimpor modul keamanan hashlib dan mendefinisikan fungsi algoritma kriptografi.\n- Menjalankan pengujian program pada konsol terminal dan mengamati nilai luaran hash.\n- Mendokumentasikan tangkapan layar (Gambar 2.1) hasil eksekusi terminal.`
+    );
+  }
+  if (combined.includes("basis data") || combined.includes("database") || combined.includes("sql")) {
+    return formatLangkahKerja(
+      `- Membuka server basis data MySQL/MariaDB dan aplikasi pengelola database (phpMyAdmin / DBeaver).\n- Menuliskan instruksi kueri DDL dan DML sesuai modul praktikum Basis Data Minggu ${mingguKe}.\n- Menjalankan kueri SQL pada konsol terminal dan memverifikasi integritas data tabel.\n- Mendokumentasikan tangkapan layar (Gambar 2.1) hasil tabel kueri ke dalam lembar laporan praktikum.`
+    );
+  }
+  return formatLangkahKerja(
+    `- Menyiapkan kode program pada editor kode.\n- Melakukan kompilasi dan pengujian input data pada terminal.\n- Mengamati output eksekusi program dan mendokumentasikan hasil pengujian (Gambar 2.1).`
+  );
+}
+
+function getDefaultAnalysis(praktikumNama: string, mingguKe: number, materi?: string): string {
+  const combined = (praktikumNama || "").toLowerCase();
+  const topik = materi ? `"${materi}"` : `Minggu ${mingguKe}`;
+  if (combined.includes("keamanan") || combined.includes("security") || combined.includes("kripto")) {
+    return `Berdasarkan pengujian praktikum pada mata kuliah "${praktikumNama}" topik ${topik}, program keamanan dan kriptografi berhasil dijalankan dengan baik pada konsol terminal. Logika pemrosesan data uji berjalan secara akurat tanpa galat runtime, dan hasil luaran pada screenshot membuktikan ketercapaian modul praktikum.`;
+  }
+  if (combined.includes("basis data") || combined.includes("database") || combined.includes("sql")) {
+    return `Berdasarkan pengujian praktikum pada mata kuliah "${praktikumNama}" topik ${topik}, instruksi kueri basis data berhasil dieksekusi dengan baik pada server database. Manipulasi data dan struktur tabel berjalan secara valid sesuai perancangan skema laboratorium.`;
+  }
+  return `Berdasarkan pengujian praktikum pada mata kuliah "${praktikumNama}" topik ${topik}, program berhasil dijalankan dengan baik dan menghasilkan keluaran yang konsisten sesuai tujuan percobaan.`;
 }
 
 // Subkomponen: Urutan Input Gambar
@@ -575,6 +647,55 @@ function formatLangkahKerja(text: string): string {
     .join("\n");
 }
 
+export function formatCoverJadwal(tanggal?: string | null, tempat?: string | null): string {
+  let cleanTgl = (tanggal || "").trim();
+  let cleanTmp = (tempat || "").trim();
+
+  if (!cleanTgl && !cleanTmp) return "";
+  if (!cleanTmp) return cleanTgl;
+  if (!cleanTgl) return cleanTmp;
+
+  // Pola rentang jam atau jam tunggal (misal 07.00-08.30, 16:45 - 18:45, 07.00)
+  const timeRangePattern = /\b\d{1,2}[:.]\d{2}\s*(?:-|–|—|s\/d|\/)?\s*\d{1,2}[:.]\d{2}\b/gi;
+  const singleTimePattern = /\b\d{1,2}[:.]\d{2}\b/gi;
+
+  const tmpHasTime = /\d{1,2}[:.]\d{2}/.test(cleanTmp);
+  const tglHasTime = /\d{1,2}[:.]\d{2}/.test(cleanTgl);
+
+  // Jika di 'tempat' (jadwal praktikum) sudah ada jam, bersihkan jam dari 'tanggal'
+  // agar cover tidak memuat jam duplikat / ganda
+  if (tmpHasTime && tglHasTime) {
+    cleanTgl = cleanTgl
+      .replace(timeRangePattern, "")
+      .replace(singleTimePattern, "")
+      .replace(/\s{2,}/g, " ")
+      .replace(/[\s,:/–-]+$/, "")
+      .trim();
+  }
+
+  // Bersihkan duplikasi nama hari jika tanggal sudah memuat hari dan tempat juga diawali nama hari yang sama
+  const days = ["senin", "selasa", "rabu", "kamis", "jumat", "jum'at", "sabtu", "minggu"];
+  for (const day of days) {
+    if (cleanTgl.toLowerCase().includes(day) && cleanTmp.toLowerCase().startsWith(day)) {
+      cleanTmp = cleanTmp.substring(day.length).replace(/^[\s,:\-\/]+/, "").trim();
+      break;
+    }
+  }
+
+  // Jika satu string sudah terkandung utuh dalam string lainnya
+  if (cleanTmp && cleanTgl.toLowerCase().includes(cleanTmp.toLowerCase())) {
+    return cleanTgl;
+  }
+  if (cleanTgl && cleanTmp.toLowerCase().includes(cleanTgl.toLowerCase())) {
+    return cleanTmp;
+  }
+
+  if (cleanTgl && cleanTmp) {
+    return `${cleanTgl} / ${cleanTmp}`;
+  }
+  return cleanTgl || cleanTmp;
+}
+
 function LivePreviewPanel({
   currentStep,
   praktikum,
@@ -651,13 +772,8 @@ function LivePreviewPanel({
         "- Mengamati dan mencatat hasil eksekusi program."
       ];
 
-  // Clean schedule & room (avoid duplicate schedule)
-  const cleanTgl = (tanggal || "").trim();
-  const cleanTmp = (tempat || "").trim();
-  let coverJadwal = cleanTgl;
-  if (cleanTmp && !cleanTgl.toLowerCase().includes(cleanTmp.toLowerCase())) {
-    coverJadwal = `${cleanTgl} / ${cleanTmp}`;
-  }
+  // Clean schedule & room (avoid duplicate schedule/hours)
+  const coverJadwal = formatCoverJadwal(tanggal, tempat);
 
   // Calculate dynamic pages
   // Page 1: Cover
@@ -1242,9 +1358,18 @@ export function ReportWizard({
   const [materi, setMateri] = useState(
     initialData?.materi || `PRAKTIKUM ${mingguKe}: MODUL DAN IMPLEMENTASI`
   );
-  const [tanggal, setTanggal] = useState(
-    initialData?.tanggal || "Senin 13 April 2026 07.00-08.30"
-  );
+  const [tanggal, setTanggal] = useState(() => {
+    if (initialData?.tanggal) {
+      // Bersihkan sisa jam hardcoded lama 07.00-08.30 jika ada
+      const cleaned = initialData.tanggal
+        .replace(/\b07\.00\s*[-–]\s*08\.30\b/gi, "")
+        .replace(/\s{2,}/g, " ")
+        .replace(/[\s,:/–-]+$/, "")
+        .trim();
+      return cleaned || "Senin, 13 April 2026";
+    }
+    return "Senin, 13 April 2026";
+  });
   const [tempat, setTempat] = useState(
     initialData?.tempat || praktikum.jadwal || "Laboratorium Basis Data"
   );
@@ -1267,33 +1392,35 @@ export function ReportWizard({
   const [laprakCodes, setLaprakCodes] = useState<OrderedCode[]>(() =>
     parseInitialCodes(
       initialData?.kodeProgram,
-      `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Implementasi Praktikum Minggu ${mingguKe}" << endl;\n    return 0;\n}`,
+      getDefaultCodeTemplate(praktikum.nama, mingguKe, false),
       "Program Utama"
     )
   );
-  const [laprakBahan, setLaprakBahan] = useState<string>(
-    initialData?.laprakBahan
-      ? (Array.isArray(JSON.parse(initialData.laprakBahan || "[]"))
-          ? JSON.parse(initialData.laprakBahan || "[]").join(", ")
-          : initialData.laprakBahan)
-      : "PC / Laptop, Compiler C++ (Dev-C++ / GCC), Library standar <iostream>"
-  );
+  const [laprakBahan, setLaprakBahan] = useState<string>(() => {
+    if (initialData?.laprakBahan) {
+      try {
+        const parsed = JSON.parse(initialData.laprakBahan);
+        return Array.isArray(parsed) ? parsed.join(", ") : initialData.laprakBahan;
+      } catch {
+        return initialData.laprakBahan;
+      }
+    }
+    return getDefaultToolsAndMaterials(praktikum.nama);
+  });
   const [laprakLangkah, setLaprakLangkah] = useState<string>(() => {
-    let raw = "";
     if (initialData?.laprakLangkah) {
       try {
         const parsed = JSON.parse(initialData.laprakLangkah);
-        raw = Array.isArray(parsed) ? parsed.join("\n") : initialData.laprakLangkah;
+        const raw = Array.isArray(parsed) ? parsed.join("\n") : initialData.laprakLangkah;
+        return formatLangkahKerja(raw);
       } catch {
-        raw = initialData.laprakLangkah;
+        return formatLangkahKerja(initialData.laprakLangkah);
       }
-    } else {
-      raw = "- Menyiapkan kode program pada editor.\n- Melakukan kompilasi dan pengujian input data.\n- Mengamati output eksekusi program.";
     }
-    return formatLangkahKerja(raw);
+    return getDefaultWorkSteps(praktikum.nama, mingguKe);
   });
   const [laprakAnalisis, setLaprakAnalisis] = useState<string>(
-    initialData?.laprakAnalisis || "Berdasarkan pengujian praktikum, program berhasil dijalankan dengan baik dan menghasilkan keluaran yang konsisten sesuai tujuan percobaan."
+    initialData?.laprakAnalisis || getDefaultAnalysis(praktikum.nama, mingguKe, materi)
   );
   const [laprakAnalyzed, setLaprakAnalyzed] = useState<boolean>(!!initialData?.laprakAnalisis);
   const [laprakApproved, setLaprakApproved] = useState<boolean>(!!initialData?.laprakAnalisis);
@@ -1314,16 +1441,28 @@ export function ReportWizard({
   const [posttestCodes, setPosttestCodes] = useState<OrderedCode[]>(() =>
     parseInitialCodes(
       (initialData as any)?.kodePosttest,
-      `#include <iostream>\nusing namespace std;\n\n// Kode Program Tugas Mandiri / Posttest\nint main() {\n    cout << "Tugas Posttest Minggu ${mingguKe}" << endl;\n    return 0;\n}`,
+      getDefaultCodeTemplate(praktikum.nama, mingguKe, true),
       "Program Posttest"
     )
   );
-  const [posttestTujuan, setPosttestTujuan] = useState<string>(
-    initialData?.posttestTujuan || "Tujuan pembuatan program posttest ini adalah untuk memperdalam pemahaman mengenai implementasi modul secara mandiri."
-  );
+  const [posttestTujuan, setPosttestTujuan] = useState<string>(() => {
+    if (initialData?.posttestTujuan) return initialData.posttestTujuan;
+    const combined = (praktikum?.nama || "").toLowerCase();
+    if (combined.includes("keamanan") || combined.includes("security") || combined.includes("kripto")) {
+      return `Tujuan pembuatan program tugas mandiri posttest pada materi "${materi || praktikum.nama}" ini adalah untuk mengukur pemahaman mahasiswa secara mandiri dalam merancang algoritma kriptografi dan keamanan data, memvalidasi hasil integritas pesan, serta mendokumentasikan hasil pengujian terminal sesuai modul praktikum.`;
+    }
+    if (combined.includes("basis data") || combined.includes("database") || combined.includes("sql")) {
+      return `Tujuan pembuatan program posttest pada materi "${materi || praktikum.nama}" ini adalah untuk memperdalam kemampuan perancangan skema relasional, mengoptimalkan kueri manipulasi data (DML), serta menyelesaikan skenario studi kasus pengujian basis data secara mandiri.`;
+    }
+    return `Tujuan pembuatan program posttest ini adalah untuk memperdalam pemahaman mengenai implementasi modul secara mandiri sesuai capaian praktikum.`;
+  });
   const [posttestAnalyzed, setPosttestAnalyzed] = useState<boolean>(!!initialData?.posttestTujuan);
   const [posttestApproved, setPosttestApproved] = useState<boolean>(!!initialData?.posttestTujuan);
   const [analyzingPosttest, setAnalyzingPosttest] = useState(false);
+
+  // Status & Warning AI Notice
+  const [aiNotice, setAiNotice] = useState<{ type: "success" | "warning"; message: string } | null>(null);
+  const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
 
   // Action Handlers for Navigation & Reset
   const handleConfirmPretest = () => {
@@ -1355,12 +1494,12 @@ export function ReportWizard({
           id: `code_1_${Date.now()}`,
           order: 1,
           title: "Program Utama",
-          code: `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Implementasi Praktikum Minggu ${mingguKe}" << endl;\n    return 0;\n}`
+          code: getDefaultCodeTemplate(praktikum.nama, mingguKe, false)
         }
       ]);
-      setLaprakBahan("PC / Laptop, Compiler C++ (Dev-C++ / GCC), Library standar <iostream>");
-      setLaprakLangkah("- Menyiapkan kode program pada editor.\n- Melakukan kompilasi dan pengujian input data.\n- Mengamati output eksekusi program.");
-      setLaprakAnalisis("Berdasarkan pengujian praktikum, program berhasil dijalankan dengan baik dan menghasilkan keluaran yang konsisten sesuai tujuan percobaan.");
+      setLaprakBahan(getDefaultToolsAndMaterials(praktikum.nama));
+      setLaprakLangkah(getDefaultWorkSteps(praktikum.nama, mingguKe));
+      setLaprakAnalisis(getDefaultAnalysis(praktikum.nama, mingguKe, materi));
       setLaprakApproved(false);
       setLaprakAnalyzed(false);
     }
@@ -1380,10 +1519,14 @@ export function ReportWizard({
           id: `code_1_${Date.now()}`,
           order: 1,
           title: "Program Posttest",
-          code: `#include <iostream>\nusing namespace std;\n\n// Kode Program Tugas Mandiri / Posttest\nint main() {\n    cout << "Tugas Posttest Minggu ${mingguKe}" << endl;\n    return 0;\n}`
+          code: getDefaultCodeTemplate(praktikum.nama, mingguKe, true)
         }
       ]);
-      setPosttestTujuan("Tujuan pembuatan program posttest ini adalah untuk memperdalam pemahaman mengenai implementasi modul secara mandiri.");
+      const combined = (praktikum?.nama || "").toLowerCase();
+      const defaultPosttest = combined.includes("keamanan") || combined.includes("security")
+        ? `Tujuan pembuatan program posttest materi "${materi || praktikum.nama}" adalah untuk memvalidasi algoritma keamanan mandiri dan memverifikasi integritas luaran data pada terminal.`
+        : `Tujuan pembuatan program posttest ini adalah untuk memperdalam pemahaman mengenai implementasi modul secara mandiri.`;
+      setPosttestTujuan(defaultPosttest);
       setPosttestApproved(false);
       setPosttestAnalyzed(false);
     }
@@ -1404,13 +1547,18 @@ export function ReportWizard({
   const runPretestAI = async () => {
     setAnalyzingPretest(true);
     try {
-      const primaryImage = pretestImages[0]?.url || null;
+      const allImgs = pretestImages
+        .filter((img) => Boolean(img.url))
+        .map((img) => ({ url: img.url, caption: img.caption || "", order: img.order }));
+      const primaryImage = allImgs[0]?.url || null;
       const res = await fetch("/api/laporan/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           step: "pretest",
           materi,
+          praktikumNama: praktikum?.nama || "",
+          images: allImgs,
           image: primaryImage
         })
       });
@@ -1418,18 +1566,34 @@ export function ReportWizard({
       if (json.success && json.data?.pretestQ) {
         setPretestQ(json.data.pretestQ);
       } else {
-        const judul = materi ? `"${materi}"` : "praktikum ini";
+        const matkul = praktikum?.nama || "Praktikum";
         setPretestQ(
-          `A. Jelaskan konsep teoritis dasar yang mendasari materi ${judul}!\nB. Sebutkan sintaks atau komponen fungsi utama dalam C++ yang digunakan dalam implementasi modul ini!\nC. Bagaimana alur logika algoritma yang diterapkan untuk menyelesaikan kasus uji pada praktikum ini?`
+          `A. Jelaskan konsep teoritis dasar yang mendasari modul ${materi ? `"${materi}"` : matkul}!\nB. Uraikan arsitektur atau komponen perangkat lunak utama yang digunakan dalam implementasi laboratorium ini!\nC. Bagaimana alur logika dan metodologi yang diterapkan untuk menyelesaikan skenario pengujian pada praktikum ini?`
         );
+      }
+
+      if (json.isAi) {
+        setAiNotice({
+          type: "success",
+          message: `AI Vision (${json.modelUsed || "Gemini"}) berhasil membaca ${allImgs.length} gambar & modul praktikum ${praktikum.nama}.`
+        });
+      } else {
+        setAiNotice({
+          type: "warning",
+          message: json.aiWarning || `Analisis menggunakan Mesin Kontekstual Akademik (${praktikum.nama}). Masukkan Google Gemini API Key di menu Pengaturan ⚙️ agar AI membaca screenshot secara langsung.`
+        });
       }
       setPretestAnalyzed(true);
     } catch (e) {
       console.error(e);
-      const judul = materi ? `"${materi}"` : "praktikum ini";
+      const matkul = praktikum?.nama || "Praktikum";
       setPretestQ(
-        `A. Jelaskan konsep teoritis dasar yang mendasari materi ${judul}!\nB. Sebutkan sintaks atau komponen fungsi utama dalam C++ yang digunakan dalam implementasi modul ini!\nC. Bagaimana alur logika algoritma yang diterapkan untuk menyelesaikan kasus uji pada praktikum ini?`
+        `A. Jelaskan konsep teoritis dasar yang mendasari modul ${materi ? `"${materi}"` : matkul}!\nB. Uraikan arsitektur atau komponen perangkat lunak utama yang digunakan dalam implementasi laboratorium ini!\nC. Bagaimana alur logika dan metodologi yang diterapkan untuk menyelesaikan skenario pengujian pada praktikum ini?`
       );
+      setAiNotice({
+        type: "warning",
+        message: `Terjadi kendala koneksi ke AI. Sistem menggunakan format standar akademik untuk ${praktikum.nama}.`
+      });
       setPretestAnalyzed(true);
     } finally {
       setAnalyzingPretest(false);
@@ -1440,7 +1604,10 @@ export function ReportWizard({
   const runLaprakAI = async () => {
     setAnalyzingLaprak(true);
     try {
-      const primaryImage = laprakImages[0]?.url || null;
+      const allImgs = laprakImages
+        .filter((img) => Boolean(img.url))
+        .map((img) => ({ url: img.url, caption: img.caption || "", order: img.order }));
+      const primaryImage = allImgs[0]?.url || null;
       const combinedCodes = laprakCodes
         .map((c) => `// ${c.title || "Kode"}\n${c.code}`)
         .join("\n\n");
@@ -1451,24 +1618,42 @@ export function ReportWizard({
         body: JSON.stringify({
           step: "laprak",
           materi,
+          praktikumNama: praktikum?.nama || "",
+          images: allImgs,
           image: primaryImage,
           kodeProgram: combinedCodes
         })
       });
       const json = await res.json();
       if (json.success && json.data) {
-        if (json.data.laprakBahan) setLaprakBahan(Array.isArray(json.data.laprakBahan) ? json.data.laprakBahan.join(", ") : json.data.laprakBahan);
+        if (json.data.laprakBahan) {
+          setLaprakBahan(Array.isArray(json.data.laprakBahan) ? json.data.laprakBahan.join(", ") : json.data.laprakBahan);
+        }
         if (json.data.laprakLangkah) {
           const rawSteps = Array.isArray(json.data.laprakLangkah)
             ? json.data.laprakLangkah.join("\n")
             : json.data.laprakLangkah;
           setLaprakLangkah(formatLangkahKerja(rawSteps));
         }
-        if (json.data.laprakAnalisis) setLaprakAnalisis(json.data.laprakAnalisis);
+        if (json.data.laprakAnalisis) {
+          setLaprakAnalisis(json.data.laprakAnalisis);
+        }
       } else {
         runGenerateBahanAI();
         runGenerateLangkahAI();
         runGenerateAnalisisAI();
+      }
+
+      if (json.isAi) {
+        setAiNotice({
+          type: "success",
+          message: `AI Vision (${json.modelUsed || "Gemini"}) berhasil menganalisis ${allImgs.length} screenshot & kode praktikum ${praktikum.nama}.`
+        });
+      } else {
+        setAiNotice({
+          type: "warning",
+          message: json.aiWarning || `Analisis menggunakan Mesin Analisis Kode & Gambar Deep Inspector (${praktikum.nama}). Masukkan Google Gemini API Key di menu Pengaturan ⚙️ agar AI membaca screenshot secara langsung.`
+        });
       }
       setLaprakAnalyzed(true);
     } catch (e) {
@@ -1476,6 +1661,10 @@ export function ReportWizard({
       runGenerateBahanAI();
       runGenerateLangkahAI();
       runGenerateAnalisisAI();
+      setAiNotice({
+        type: "warning",
+        message: `Terjadi kendala koneksi ke server AI. Analisis laprak disusun berdasarkan template cerdas ${praktikum.nama}.`
+      });
       setLaprakAnalyzed(true);
     } finally {
       setAnalyzingLaprak(false);
@@ -1486,7 +1675,10 @@ export function ReportWizard({
   const runGenerateBahanAI = async () => {
     setGeneratingBahan(true);
     try {
-      const primaryImage = laprakImages[0]?.url || null;
+      const allImgs = laprakImages
+        .filter((img) => Boolean(img.url))
+        .map((img) => ({ url: img.url, caption: img.caption || "", order: img.order }));
+      const primaryImage = allImgs[0]?.url || null;
       const combinedCodes = laprakCodes
         .map((c) => `// ${c.title || "Kode"}\n${c.code}`)
         .join("\n\n");
@@ -1497,6 +1689,8 @@ export function ReportWizard({
         body: JSON.stringify({
           step: "laprak",
           materi,
+          praktikumNama: praktikum?.nama || "",
+          images: allImgs,
           image: primaryImage,
           kodeProgram: combinedCodes
         })
@@ -1504,24 +1698,17 @@ export function ReportWizard({
       const json = await res.json();
       if (json.success && json.data?.laprakBahan && json.data.laprakBahan.length > 0) {
         setLaprakBahan(Array.isArray(json.data.laprakBahan) ? json.data.laprakBahan.join(", ") : json.data.laprakBahan);
-      } else {
-        // Fallback cerdas berbasis deteksi kode
-        const codeText = laprakCodes.map((c) => c.code).join(" ");
-        const tools = ["PC / Laptop"];
-        if (codeText.includes("#include") || codeText.includes("cout") || codeText.includes("cin")) {
-          tools.push("Compiler C++ (Dev-C++ / MinGW GCC)");
-          if (codeText.includes("<iostream>")) tools.push("Library standar <iostream>");
-          if (codeText.includes("<vector>")) tools.push("Library <vector>");
-          if (codeText.includes("<iomanip>")) tools.push("Library <iomanip>");
-        } else if (codeText.includes("def ") || codeText.includes("import ")) {
-          tools.push("Python 3.x", "VS Code / Jupyter Notebook");
-        } else {
-          tools.push("Code Editor / IDE", "Compiler Standar");
+        if (json.isAi) {
+          setAiNotice({
+            type: "success",
+            message: `Alat dan Bahan berhasil dianalisis oleh AI Vision (${json.modelUsed || "Gemini"}) berdasarkan ${allImgs.length} screenshot.`
+          });
         }
-        setLaprakBahan(tools.join(", "));
+      } else {
+        setLaprakBahan(getDefaultToolsAndMaterials(praktikum?.nama || ""));
       }
     } catch {
-      setLaprakBahan("PC / Laptop, Compiler C++ (Dev-C++ / GCC), Library standar <iostream>");
+      setLaprakBahan(getDefaultToolsAndMaterials(praktikum?.nama || ""));
     } finally {
       setGeneratingBahan(false);
     }
@@ -1531,7 +1718,10 @@ export function ReportWizard({
   const runGenerateLangkahAI = async () => {
     setGeneratingLangkah(true);
     try {
-      const primaryImage = laprakImages[0]?.url || null;
+      const allImgs = laprakImages
+        .filter((img) => Boolean(img.url))
+        .map((img) => ({ url: img.url, caption: img.caption || "", order: img.order }));
+      const primaryImage = allImgs[0]?.url || null;
       const combinedCodes = laprakCodes
         .map((c) => `// ${c.title || "Kode"}\n${c.code}`)
         .join("\n\n");
@@ -1542,6 +1732,8 @@ export function ReportWizard({
         body: JSON.stringify({
           step: "laprak",
           materi,
+          praktikumNama: praktikum?.nama || "",
+          images: allImgs,
           image: primaryImage,
           kodeProgram: combinedCodes
         })
@@ -1552,20 +1744,17 @@ export function ReportWizard({
           ? json.data.laprakLangkah.join("\n")
           : json.data.laprakLangkah;
         setLaprakLangkah(formatLangkahKerja(rawSteps));
+        if (json.isAi) {
+          setAiNotice({
+            type: "success",
+            message: `Langkah kerja berhasil diekstraksi oleh AI Vision (${json.modelUsed || "Gemini"}).`
+          });
+        }
       } else {
-        const titles = laprakCodes.map((c) => c.title || "program").join(" dan ");
-        setLaprakLangkah(
-          formatLangkahKerja(
-            `- Membuka compiler dan editor C++ pada PC / Laptop.\n- Menuliskan kode implementasi ${titles} secara terstruktur.\n- Melakukan proses kompilasi kode dan pengujian eksekusi program.\n- Mengamati keluaran hasil eksekusi program serta memastikan algoritma berjalan konsisten.`
-          )
-        );
+        setLaprakLangkah(getDefaultWorkSteps(praktikum?.nama || "", mingguKe));
       }
     } catch {
-      setLaprakLangkah(
-        formatLangkahKerja(
-          "- Menyiapkan program C++ untuk menerima input data.\n- Melakukan kompilasi dan pengujian algoritma.\n- Mengamati dan mencatat hasil eksekusi program."
-        )
-      );
+      setLaprakLangkah(getDefaultWorkSteps(praktikum?.nama || "", mingguKe));
     } finally {
       setGeneratingLangkah(false);
     }
@@ -1575,7 +1764,10 @@ export function ReportWizard({
   const runGenerateAnalisisAI = async () => {
     setGeneratingAnalisis(true);
     try {
-      const primaryImage = laprakImages[0]?.url || null;
+      const allImgs = laprakImages
+        .filter((img) => Boolean(img.url))
+        .map((img) => ({ url: img.url, caption: img.caption || "", order: img.order }));
+      const primaryImage = allImgs[0]?.url || null;
       const combinedCodes = laprakCodes
         .map((c) => `// ${c.title || "Kode"}\n${c.code}`)
         .join("\n\n");
@@ -1586,6 +1778,8 @@ export function ReportWizard({
         body: JSON.stringify({
           step: "laprak",
           materi,
+          praktikumNama: praktikum?.nama || "",
+          images: allImgs,
           image: primaryImage,
           kodeProgram: combinedCodes
         })
@@ -1593,16 +1787,17 @@ export function ReportWizard({
       const json = await res.json();
       if (json.success && json.data?.laprakAnalisis) {
         setLaprakAnalisis(json.data.laprakAnalisis);
+        if (json.isAi) {
+          setAiNotice({
+            type: "success",
+            message: `Ulasan analisis hasil praktikum berhasil dibuat oleh AI Vision (${json.modelUsed || "Gemini"}).`
+          });
+        }
       } else {
-        const judul = materi ? `"${materi}"` : "praktikum ini";
-        setLaprakAnalisis(
-          `Berdasarkan hasil pengujian praktikum pada materi ${judul}, seluruh baris kode program berhasil dikompilasi dan dieksekusi tanpa kendala runtime. Struktur algoritma yang diterapkan mampu memproses parameter data masukan secara akurat, di mana keluaran konsol terminal telah sesuai dengan spesifikasi kasus uji yang ditentukan pada modul praktikum.`
-        );
+        setLaprakAnalisis(getDefaultAnalysis(praktikum?.nama || "", mingguKe, materi));
       }
     } catch {
-      setLaprakAnalisis(
-        "Berdasarkan hasil pelaksanaan praktikum, implementasi kode program telah berhasil dikompilasi dan dieksekusi dengan baik. Alur logika algoritma yang diterapkan mampu memproses parameter masukan secara akurat dan menghasilkan keluaran yang konsisten dengan tujuan praktikum."
-      );
+      setLaprakAnalisis(getDefaultAnalysis(praktikum?.nama || "", mingguKe, materi));
     } finally {
       setGeneratingAnalisis(false);
     }
@@ -1612,7 +1807,10 @@ export function ReportWizard({
   const runPosttestAI = async () => {
     setAnalyzingPosttest(true);
     try {
-      const primaryImage = posttestImages[0]?.url || null;
+      const allImgs = posttestImages
+        .filter((img) => Boolean(img.url))
+        .map((img) => ({ url: img.url, caption: img.caption || "", order: img.order }));
+      const primaryImage = allImgs[0]?.url || null;
       const combinedCodes = posttestCodes
         .map((c) => `// ${c.title || "Kode Posttest"}\n${c.code}`)
         .join("\n\n");
@@ -1623,6 +1821,8 @@ export function ReportWizard({
         body: JSON.stringify({
           step: "posttest",
           materi,
+          praktikumNama: praktikum?.nama || "",
+          images: allImgs,
           image: primaryImage,
           kodeProgram: combinedCodes
         })
@@ -1631,17 +1831,31 @@ export function ReportWizard({
       if (json.success && json.data?.posttestTujuan) {
         setPosttestTujuan(json.data.posttestTujuan);
       } else {
-        const judul = materi ? `"${materi}"` : "praktikum";
+        const matkul = praktikum?.nama || "Praktikum";
+        const judul = materi ? `"${materi}"` : matkul;
         setPosttestTujuan(
-          `Tujuan dari pembuatan program posttest pada materi ${judul} ini adalah untuk mengukur dan memvalidasi pemahaman mahasiswa secara mandiri dalam merancang algoritma terpadu tanpa instruksi bertahap. Mahasiswa diharapkan mampu menerapkan konsep teori ke dalam sintaks kode yang efisien, mengelola alur logika pemrosesan data, serta menghasilkan keluaran program yang akurat sesuai spesifikasi permasalahan yang diberikan pada soal posttest.`
+          `Tujuan dari pembuatan program posttest pada materi ${judul} ini adalah untuk mengukur dan memvalidasi pemahaman mahasiswa secara mandiri dalam merancang solusi komputasi tanpa instruksi bertahap. Mahasiswa diharapkan mampu menerapkan konsep teori ke dalam implementasi teknis yang efisien, mengelola alur logika pemrosesan secara komprehensif, serta menghasilkan keluaran yang akurat sesuai spesifikasi permasalahan yang diberikan pada lembar tugas posttest.`
         );
+      }
+
+      if (json.isAi) {
+        setAiNotice({
+          type: "success",
+          message: `Tujuan pembuatan posttest berhasil dianalisis oleh AI Vision (${json.modelUsed || "Gemini"}).`
+        });
+      } else {
+        setAiNotice({
+          type: "warning",
+          message: json.aiWarning || `Analisis menggunakan Mesin Kontekstual Akademik (${praktikum.nama}). Masukkan API Key di Pengaturan ⚙️ untuk analisis visual langsung.`
+        });
       }
       setPosttestAnalyzed(true);
     } catch (e) {
       console.error(e);
-      const judul = materi ? `"${materi}"` : "praktikum";
+      const matkul = praktikum?.nama || "Praktikum";
+      const judul = materi ? `"${materi}"` : matkul;
       setPosttestTujuan(
-        `Tujuan dari pembuatan program posttest pada materi ${judul} ini adalah untuk mengukur dan memvalidasi pemahaman mahasiswa secara mandiri dalam merancang algoritma terpadu tanpa instruksi bertahap.`
+        `Tujuan dari pembuatan program posttest pada materi ${judul} ini adalah untuk mengukur dan memvalidasi pemahaman mahasiswa secara mandiri dalam merancang solusi teknis secara mandiri.`
       );
       setPosttestAnalyzed(true);
     } finally {
@@ -1785,6 +1999,15 @@ export function ReportWizard({
             <span>Kembali ke Tabel Mingguan</span>
           </Link>
           <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              type="button"
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs hover:border-[#002b66]"
+              title="Pengaturan Model AI & Google Gemini API Key"
+            >
+              <Settings className="w-3.5 h-3.5 text-[#002b66]" />
+              <span className="hidden sm:inline">Pengaturan AI</span>
+            </button>
             <div className="p-1.5 rounded-xl bg-white/80 shadow-xs border border-slate-200/60">
               <img
                 src="/uad_logo.png"
@@ -1849,10 +2072,59 @@ export function ReportWizard({
 
       {/* Main Form Content */}
       <main className={`mx-auto px-4 sm:px-6 pt-8 ${currentStep <= 3 ? "max-w-7xl" : "max-w-4xl"}`}>
+        {/* Banner Notifikasi Status Analisis AI */}
+        {aiNotice && (
+          <div
+            className={`mb-6 p-4 rounded-xl border flex items-start justify-between gap-3 shadow-xs transition-all animate-in fade-in slide-in-from-top-2 duration-300 ${
+              aiNotice.type === "success"
+                ? "bg-emerald-50/90 border-emerald-300 text-emerald-900"
+                : "bg-amber-50/90 border-amber-300 text-amber-900"
+            }`}
+          >
+            <div className="flex items-start space-x-3">
+              {aiNotice.type === "success" ? (
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <AlertCircle className="w-4 h-4" />
+                </div>
+              )}
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider">
+                  {aiNotice.type === "success" ? "Analisis AI Vision Berhasil" : "Status Analisis AI"}
+                </h4>
+                <p className="text-xs font-medium mt-0.5 leading-relaxed">{aiNotice.message}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 flex-shrink-0">
+              {aiNotice.type === "warning" && (
+                <button
+                  type="button"
+                  onClick={() => setShowSettingsModal(true)}
+                  className="px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-200 hover:bg-amber-300 text-amber-900 transition-colors shadow-2xs"
+                >
+                  Buka Pengaturan ⚙️
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setAiNotice(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-black/5 transition-colors"
+                title="Tutup pemberitahuan"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Identitas Sesi Praktikum */}
         <div className="paper-card p-6 mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="sm:col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+            <div className="sm:col-span-6">
               <label className="paper-label">Materi / Topik Praktikum</label>
               <input
                 type="text"
@@ -1862,14 +2134,24 @@ export function ReportWizard({
                 placeholder="Contoh: PRAKTIKUM 1: KOMPLEKSITAS ALGORITMA"
               />
             </div>
-            <div>
+            <div className="sm:col-span-3">
+              <label className="paper-label">Tanggal Pelaksanaan</label>
+              <input
+                type="text"
+                value={tanggal}
+                onChange={(e) => setTanggal(e.target.value)}
+                className="paper-input text-xs"
+                placeholder="Contoh: Senin, 13 April 2026"
+              />
+            </div>
+            <div className="sm:col-span-3">
               <label className="paper-label">Jadwal & Ruang Lab</label>
               <input
                 type="text"
                 value={tempat}
                 onChange={(e) => setTempat(e.target.value)}
                 className="paper-input text-xs"
-                placeholder="Contoh: Senin 07.00 / Lab Basis Data"
+                placeholder="Contoh: 16:45 - 18:45 / Lab Komputasi"
               />
             </div>
           </div>
@@ -1999,7 +2281,7 @@ export function ReportWizard({
                       }}
                       label="Kode Program Praktikum (Dapat Banyak File / Terurut)"
                       sectionPrefix="2"
-                      defaultTemplate={`#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Program Praktikum Minggu ${mingguKe}" << endl;\n    return 0;\n}`}
+                      defaultTemplate={getDefaultCodeTemplate(praktikum.nama, mingguKe, false)}
                     />
 
                     {/* Bagian Urutan Gambar Screenshot Laprak */}
@@ -2329,7 +2611,7 @@ export function ReportWizard({
                       }}
                       label="Kode Program Tugas Posttest / Mandiri (Terurut)"
                       sectionPrefix="3"
-                      defaultTemplate={`#include <iostream>\nusing namespace std;\n\n// Kode Posttest Minggu ${mingguKe}\nint main() {\n    cout << "Implementasi Posttest" << endl;\n    return 0;\n}`}
+                      defaultTemplate={getDefaultCodeTemplate(praktikum.nama, mingguKe, true)}
                     />
 
                     {/* Bagian Urutan Gambar Screenshot Posttest */}
@@ -2462,13 +2744,14 @@ export function ReportWizard({
               {/* Custom Filename */}
               <div>
                 <label className="paper-label">Beri Nama File Laporan Anda</label>
-                <div className="relative max-w-md">
-                  <FileText className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <div className="relative max-w-md flex items-center">
+                  <FileText className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none z-10" />
                   <input
                     type="text"
                     value={finalFilename}
                     onChange={(e) => setFinalFilename(e.target.value)}
-                    className="paper-input pl-9 font-semibold text-slate-900"
+                    className="paper-input pl-10 font-semibold text-slate-900"
+                    style={{ paddingLeft: "2.6rem" }}
                     placeholder="Contoh: Laporan_Stralgo_Minggu_1_Rafi"
                   />
                 </div>
@@ -2649,6 +2932,11 @@ export function ReportWizard({
           </div>
         )}
       </main>
+
+      <AiSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+      />
     </div>
   );
 }

@@ -12,7 +12,16 @@ model Profile {
   nama      String
   nim       String   @unique
   kelas     String
+  foto      String?
   createdAt DateTime @default(now())
+}
+
+model Settings {
+  id            String   @id @default("singleton")
+  apiKey        String?
+  selectedModel String   @default("gemini-3.8-flash")
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
 }
 
 model Praktikum {

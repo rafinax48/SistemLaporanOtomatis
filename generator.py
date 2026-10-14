@@ -316,6 +316,41 @@ def convert_docx_to_pdf(docx_path, pdf_path):
         print(f"Warning converting PDF via Word COM: {e}", file=sys.stderr)
         return False
 
+def format_cover_jadwal(tanggal, tempat):
+    clean_tgl = str(tanggal or "").strip()
+    clean_tmp = str(tempat or "").strip()
+    
+    if not clean_tgl and not clean_tmp:
+        return ""
+    if not clean_tmp:
+        return clean_tgl
+    if not clean_tgl:
+        return clean_tmp
+
+    tmp_has_time = bool(re.search(r'\d{1,2}[:.]\d{2}', clean_tmp))
+    tgl_has_time = bool(re.search(r'\d{1,2}[:.]\d{2}', clean_tgl))
+
+    # Jika 'tempat' (jadwal) sudah memiliki jam dan 'tanggal' juga memuat jam,
+    # bersihkan jam dari tanggal agar tidak terjadi duplikasi ganda
+    if tmp_has_time and tgl_has_time:
+        clean_tgl = re.sub(r'\b\d{1,2}[:.]\d{2}\s*(?:-|–|—|s/d|/)?\s*\d{1,2}[:.]\d{2}\b', '', clean_tgl)
+        clean_tgl = re.sub(r'\b\d{1,2}[:.]\d{2}\b', '', clean_tgl)
+        clean_tgl = re.sub(r'\s{2,}', ' ', clean_tgl).strip(' ,/–-')
+
+    # Bersihkan nama hari berulang jika tempat diawali nama hari yang sama
+    days = ["senin", "selasa", "rabu", "kamis", "jumat", "jum'at", "sabtu", "minggu"]
+    for day in days:
+        if day in clean_tgl.lower() and clean_tmp.lower().startswith(day):
+            clean_tmp = clean_tmp[len(day):].lstrip(' ,:-/')
+            break
+
+    if clean_tmp.lower() in clean_tgl.lower():
+        return clean_tgl
+    if clean_tgl.lower() in clean_tmp.lower():
+        return clean_tmp
+        
+    return f"{clean_tgl} / {clean_tmp}" if clean_tmp else clean_tgl
+
 def generate_report(user_input):
     if not os.path.exists(TEMPLATE_PATH):
         raise FileNotFoundError(f"Template Word tidak ditemukan pada: {TEMPLATE_PATH}")
@@ -363,18 +398,10 @@ def generate_report(user_input):
         format_font(run4, size=11, name="Calibri", bold=True)
         doc.paragraphs[4].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # Paragraph 5: Jadwal / Tempat (Pencegahan Teks Duplikat)
+    # Paragraph 5: Jadwal / Tempat (Pencegahan Teks Duplikat & Double Jam)
     if len(doc.paragraphs) > 5:
         doc.paragraphs[5].text = ""
-        clean_tgl = str(tanggal).strip()
-        clean_tmp = str(tempat).strip()
-        if clean_tmp.lower() in clean_tgl.lower():
-            cover_jadwal = clean_tgl
-        elif clean_tgl.lower() in clean_tmp.lower():
-            cover_jadwal = clean_tmp
-        else:
-            cover_jadwal = f"{clean_tgl} / {clean_tmp}" if clean_tmp else clean_tgl
-        
+        cover_jadwal = format_cover_jadwal(tanggal, tempat)
         run5 = doc.paragraphs[5].add_run(cover_jadwal)
         format_font(run5, size=11, name="Calibri", bold=True)
         doc.paragraphs[5].alignment = WD_ALIGN_PARAGRAPH.CENTER

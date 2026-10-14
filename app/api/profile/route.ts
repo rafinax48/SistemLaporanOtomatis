@@ -18,7 +18,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { nama, nim, kelas, praktikumAwal } = body;
+    const { nama, nim, kelas, foto, praktikumAwal } = body;
 
     if (!nama || !nim || !kelas) {
       return NextResponse.json(
@@ -30,8 +30,8 @@ export async function POST(req: Request) {
     // Buat / Update profil
     const profile = await prisma.profile.upsert({
       where: { nim },
-      update: { nama, kelas },
-      create: { nama, nim, kelas }
+      update: { nama, kelas, ...(foto !== undefined ? { foto } : {}) },
+      create: { nama, nim, kelas, foto: foto || null }
     });
 
     // Jika disertakan praktikum awal (onboarding)

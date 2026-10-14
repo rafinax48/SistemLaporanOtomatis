@@ -20,7 +20,11 @@ import {
   UserCheck,
   Camera,
   UploadCloud,
-  User
+  User,
+  Settings as SettingsIcon,
+  Key,
+  Cpu,
+  ExternalLink
 } from "lucide-react";
 
 interface Profile {
@@ -73,6 +77,60 @@ export function DashboardView({
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [editProfileError, setEditProfileError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // State untuk modal Pengaturan AI & API Key
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [settingsApiKey, setSettingsApiKey] = useState("");
+  const [settingsModel, setSettingsModel] = useState("gemini-3.8-flash");
+  const [hasCustomKey, setHasCustomKey] = useState(false);
+  const [maskedKey, setMaskedKey] = useState("");
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+
+  const openSettingsModal = async () => {
+    setSettingsError(null);
+    try {
+      const res = await fetch("/api/settings");
+      if (res.ok) {
+        const data = await res.json();
+        setSettingsModel(data.selectedModel || "gemini-3.8-flash");
+        setHasCustomKey(Boolean(data.hasCustomKey));
+        setMaskedKey(data.maskedKey || "");
+        setSettingsApiKey("");
+      }
+    } catch {
+      // ignore
+    }
+    setShowSettingsModal(true);
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSettings(true);
+    setSettingsError(null);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          apiKey: settingsApiKey.trim() ? settingsApiKey.trim() : undefined,
+          selectedModel: settingsModel
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal menyimpan pengaturan.");
+      }
+      setHasCustomKey(data.hasCustomKey);
+      setToastMessage("Pengaturan AI (Model: " + settingsModel + ") berhasil disimpan.");
+      setTimeout(() => setToastMessage(null), 4000);
+      setShowSettingsModal(false);
+    } catch (err: any) {
+      setSettingsError(err.message || "Terjadi kesalahan saat menyimpan pengaturan.");
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   // Form tambah praktikum
   const [namaBaru, setNamaBaru] = useState("");
@@ -294,6 +352,16 @@ export function DashboardView({
                 )}
               </div>
             </div>
+
+            {/* Tombol Pengaturan AI & API Key */}
+            <button
+              onClick={openSettingsModal}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:text-[#002b66] hover:bg-amber-50/80 border border-slate-200 hover:border-amber-300 transition-all shadow-2xs bg-white active:scale-95"
+              title="Pengaturan Model AI & API Key"
+              aria-label="Pengaturan Model AI & API Key"
+            >
+              <SettingsIcon className="w-3.5 h-3.5 text-slate-600" />
+            </button>
 
             {/* Tombol Edit Profil */}
             <button
@@ -891,6 +959,168 @@ export function DashboardView({
                   className="btn-primary py-2 px-5 text-xs"
                 >
                   {isSubmitting ? "Menyimpan..." : "Tambahkan"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Pengaturan AI & API Key */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="paper-card max-w-lg w-full p-6 shadow-2xl relative animate-in zoom-in-95 duration-200 border-t-4 border-t-[#002b66]">
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#002b66] to-[#0d47a1] flex items-center justify-center text-amber-300 shadow-sm">
+                  <Cpu className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-[#002b66] text-base">Pengaturan Model AI</h3>
+                  <p className="text-xs text-slate-500">Konfigurasi Google Gemini & API Key</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSettingsModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {settingsError && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{settingsError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveSettings} className="space-y-4">
+              {/* Pemilihan Model AI */}
+              <div>
+                <label className="paper-label flex items-center justify-between mb-2">
+                  <span>Pilihan Model AI</span>
+                  <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/60">
+                    Aktif: {settingsModel}
+                  </span>
+                </label>
+
+                <div className="grid grid-cols-1 gap-2.5">
+                  {/* Pilihan 1: gemini-3.8-flash */}
+                  <label
+                    onClick={() => setSettingsModel("gemini-3.8-flash")}
+                    className={`cursor-pointer p-3 rounded-xl border text-left transition-all flex items-start space-x-3 ${
+                      settingsModel === "gemini-3.8-flash"
+                        ? "bg-amber-50/70 border-amber-400 ring-2 ring-amber-400/20 shadow-xs"
+                        : "bg-white border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="modelTier"
+                      value="gemini-3.8-flash"
+                      checked={settingsModel === "gemini-3.8-flash"}
+                      onChange={() => setSettingsModel("gemini-3.8-flash")}
+                      className="mt-0.5 text-amber-600 focus:ring-amber-500"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-bold text-slate-900">Gemini 3.8 Flash</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800">
+                          Rekomendasi (Planning)
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Sangat cepat, multimodal vision cerdas, dan ideal untuk kuota gratis Google AI Studio.
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Pilihan 2: gemini-3.1-pro */}
+                  <label
+                    onClick={() => setSettingsModel("gemini-3.1-pro")}
+                    className={`cursor-pointer p-3 rounded-xl border text-left transition-all flex items-start space-x-3 ${
+                      settingsModel === "gemini-3.1-pro"
+                        ? "bg-amber-50/70 border-amber-400 ring-2 ring-amber-400/20 shadow-xs"
+                        : "bg-white border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="modelTier"
+                      value="gemini-3.1-pro"
+                      checked={settingsModel === "gemini-3.1-pro"}
+                      onChange={() => setSettingsModel("gemini-3.1-pro")}
+                      className="mt-0.5 text-amber-600 focus:ring-amber-500"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-bold text-slate-900">Gemini 3.1 Pro</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-blue-100 text-blue-800">
+                          Pro Flagship
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Kapasitas penalaran maksimal untuk laporan yang sangat kompleks dan mendalam.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Input Custom Google Gemini API Key */}
+              <div>
+                <label className="paper-label flex items-center justify-between">
+                  <span className="flex items-center space-x-1">
+                    <Key className="w-3.5 h-3.5 text-amber-600 inline" />
+                    <span>Google Gemini API Key</span>
+                  </span>
+                  {hasCustomKey && (
+                    <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      Kunci Tersimpan: {maskedKey}
+                    </span>
+                  )}
+                </label>
+                <input
+                  type="password"
+                  placeholder={hasCustomKey ? "Masukkan API Key baru untuk mengganti..." : "AIzaSy..."}
+                  value={settingsApiKey}
+                  onChange={(e) => setSettingsApiKey(e.target.value)}
+                  className="paper-input font-mono text-xs mt-1"
+                />
+                <div className="flex items-center justify-between mt-1.5 text-[11px] text-slate-500">
+                  <span>
+                    {hasCustomKey
+                      ? "Kunci API kustom aktif di sistem."
+                      : "Belum ada kunci kustom (memakai fallback default server .env)."}
+                  </span>
+                  <a
+                    href="https://aistudio.google.com/app/apikey"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[#002b66] hover:text-amber-600 font-semibold inline-flex items-center space-x-0.5"
+                  >
+                    <span>Dapatkan API Key Gratis</span>
+                    <ExternalLink className="w-3 h-3 ml-0.5" />
+                  </a>
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end space-x-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowSettingsModal(false)}
+                  className="btn-secondary py-2 px-4 text-xs"
+                >
+                  Tutup
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingSettings}
+                  className="btn-primary py-2 px-5 text-xs flex items-center space-x-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>{isSavingSettings ? "Menyimpan..." : "Simpan Pengaturan"}</span>
                 </button>
               </div>
             </form>
