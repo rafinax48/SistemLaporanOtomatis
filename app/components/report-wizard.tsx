@@ -204,6 +204,62 @@ function getDefaultAnalysis(praktikumNama: string, mingguKe: number, materi?: st
   return `Berdasarkan pengujian praktikum pada mata kuliah "${praktikumNama}" topik ${topik}, program berhasil dijalankan dengan baik dan menghasilkan keluaran yang konsisten sesuai tujuan percobaan.`;
 }
 
+// Helper kompresi dan downscale gambar di sisi browser agar payload ringan & teks tetap tajam
+async function optimizeImageForUpload(file: File, maxDim = 1600, quality = 0.88): Promise<string> {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Gunakan JPEG kualitas 88% agar teks OCR terbaca jelas dan ukuran payload kecil (< 400KB)
+      const dataUrl = canvas.toDataURL("image/jpeg", quality);
+      resolve(dataUrl);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(file);
+    };
+    img.src = objectUrl;
+  });
+}
+
 // Subkomponen: Urutan Input Gambar
 function OrderedImageSection({
   images,
@@ -220,50 +276,45 @@ function OrderedImageSection({
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const [replacingId, setReplacingId] = useState<string | null>(null);
 
-  const handleMultipleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMultipleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     const fileList = Array.from(files);
-    let loadedCount = 0;
     const newItems: OrderedImage[] = [];
 
-    fileList.forEach((file, fIdx) => {
-      const reader = new FileReader();
-      reader.onload = () => {
+    for (let fIdx = 0; fIdx < fileList.length; fIdx++) {
+      const file = fileList[fIdx];
+      const optimizedUrl = await optimizeImageForUpload(file);
+      if (optimizedUrl) {
         newItems.push({
           id: `img_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
           order: images.length + fIdx + 1,
-          url: reader.result as string,
+          url: optimizedUrl,
           caption: ""
         });
-        loadedCount++;
-        if (loadedCount === fileList.length) {
-          const combined = [...images, ...newItems].sort((a, b) => a.order - b.order);
-          // Re-normalize order numbers
-          const reordered = combined.map((item, idx) => ({ ...item, order: idx + 1 }));
-          onChange(reordered);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+      }
+    }
+
+    const combined = [...images, ...newItems].sort((a, b) => a.order - b.order);
+    const reordered = combined.map((item, idx) => ({ ...item, order: idx + 1 }));
+    onChange(reordered);
 
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleReplaceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReplaceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !replacingId) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
+    const optimizedUrl = await optimizeImageForUpload(file);
+    if (optimizedUrl) {
       const updated = images.map((img) =>
-        img.id === replacingId ? { ...img, url: reader.result as string } : img
+        img.id === replacingId ? { ...img, url: optimizedUrl } : img
       );
       onChange(updated);
-      setReplacingId(null);
-    };
-    reader.readAsDataURL(file);
+    }
+    setReplacingId(null);
 
     if (replaceInputRef.current) replaceInputRef.current.value = "";
   };
@@ -1600,6 +1651,23 @@ export function ReportWizard({
     }
   };
 
+  // Filter kode agar jika pengguna belum mengganti template bawaan, AI memprioritaskan membaca langsung dari screenshot
+  const getLaprakCodesForAI = () => {
+    const defaultTpl = getDefaultCodeTemplate(praktikum?.nama || "", mingguKe, false).trim();
+    const userCodes = laprakCodes.filter((c) => c.code && c.code.trim().length > 0);
+    const isDefaultOnly = userCodes.length === 1 && userCodes[0].code.trim() === defaultTpl;
+    if (isDefaultOnly) return "";
+    return userCodes.map((c) => `// ${c.title || "Kode"}\n${c.code}`).join("\n\n");
+  };
+
+  const getPosttestCodesForAI = () => {
+    const defaultPosttestTpl = getDefaultCodeTemplate(praktikum?.nama || "", mingguKe, true).trim();
+    const userPostCodes = posttestCodes.filter((c) => c.code && c.code.trim().length > 0);
+    const isDefaultPosttestOnly = userPostCodes.length === 1 && userPostCodes[0].code.trim() === defaultPosttestTpl;
+    if (isDefaultPosttestOnly) return "";
+    return userPostCodes.map((c) => `// ${c.title || "Kode Posttest"}\n${c.code}`).join("\n\n");
+  };
+
   // AI Analyzer: Laprak
   const runLaprakAI = async () => {
     setAnalyzingLaprak(true);
@@ -1608,9 +1676,7 @@ export function ReportWizard({
         .filter((img) => Boolean(img.url))
         .map((img) => ({ url: img.url, caption: img.caption || "", order: img.order }));
       const primaryImage = allImgs[0]?.url || null;
-      const combinedCodes = laprakCodes
-        .map((c) => `// ${c.title || "Kode"}\n${c.code}`)
-        .join("\n\n");
+      const combinedCodes = getLaprakCodesForAI();
 
       const res = await fetch("/api/laporan/analyze", {
         method: "POST",
@@ -1679,9 +1745,7 @@ export function ReportWizard({
         .filter((img) => Boolean(img.url))
         .map((img) => ({ url: img.url, caption: img.caption || "", order: img.order }));
       const primaryImage = allImgs[0]?.url || null;
-      const combinedCodes = laprakCodes
-        .map((c) => `// ${c.title || "Kode"}\n${c.code}`)
-        .join("\n\n");
+      const combinedCodes = getLaprakCodesForAI();
 
       const res = await fetch("/api/laporan/analyze", {
         method: "POST",
@@ -1722,9 +1786,7 @@ export function ReportWizard({
         .filter((img) => Boolean(img.url))
         .map((img) => ({ url: img.url, caption: img.caption || "", order: img.order }));
       const primaryImage = allImgs[0]?.url || null;
-      const combinedCodes = laprakCodes
-        .map((c) => `// ${c.title || "Kode"}\n${c.code}`)
-        .join("\n\n");
+      const combinedCodes = getLaprakCodesForAI();
 
       const res = await fetch("/api/laporan/analyze", {
         method: "POST",
@@ -1768,9 +1830,7 @@ export function ReportWizard({
         .filter((img) => Boolean(img.url))
         .map((img) => ({ url: img.url, caption: img.caption || "", order: img.order }));
       const primaryImage = allImgs[0]?.url || null;
-      const combinedCodes = laprakCodes
-        .map((c) => `// ${c.title || "Kode"}\n${c.code}`)
-        .join("\n\n");
+      const combinedCodes = getLaprakCodesForAI();
 
       const res = await fetch("/api/laporan/analyze", {
         method: "POST",
@@ -1811,9 +1871,7 @@ export function ReportWizard({
         .filter((img) => Boolean(img.url))
         .map((img) => ({ url: img.url, caption: img.caption || "", order: img.order }));
       const primaryImage = allImgs[0]?.url || null;
-      const combinedCodes = posttestCodes
-        .map((c) => `// ${c.title || "Kode Posttest"}\n${c.code}`)
-        .join("\n\n");
+      const combinedCodes = getPosttestCodesForAI();
 
       const res = await fetch("/api/laporan/analyze", {
         method: "POST",

@@ -137,20 +137,50 @@ export function AiSettingsModal({ isOpen, onClose, onSaved }: AiSettingsModalPro
                   <div className="flex items-center space-x-2">
                     <span className="text-xs font-bold text-slate-900">Gemini 3.8 Flash</span>
                     <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800">
-                      Rekomendasi (Planning)
+                      Rekomendasi Utama
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    Sangat cepat, multimodal vision cerdas, dan ideal untuk kuota gratis Google AI Studio.
+                    Multimodal vision cerdas generasi terbaru, cepat, dan akurat membaca screenshot kode & terminal.
                   </p>
                 </div>
               </label>
 
-              {/* Pilihan 2: gemini-3.1-pro */}
+              {/* Pilihan 2: gemini-flash-latest */}
               <label
-                onClick={() => setSelectedModel("gemini-3.1-pro")}
+                onClick={() => setSelectedModel("gemini-flash-latest")}
                 className={`cursor-pointer p-3 rounded-xl border text-left transition-all flex items-start space-x-3 ${
-                  selectedModel === "gemini-3.1-pro"
+                  selectedModel === "gemini-flash-latest"
+                    ? "bg-emerald-50/70 border-emerald-400 ring-2 ring-emerald-400/20 shadow-xs"
+                    : "bg-white border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="modalModelTier"
+                  value="gemini-flash-latest"
+                  checked={selectedModel === "gemini-flash-latest"}
+                  onChange={() => setSelectedModel("gemini-flash-latest")}
+                  className="mt-0.5 text-emerald-600 focus:ring-emerald-500"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-bold text-slate-900">Gemini Flash Latest</span>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-blue-100 text-blue-800">
+                      Paling Stabil
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Model Flash paling stabil dengan ketersediaan tinggi dan ketahanan lonjakan trafik.
+                  </p>
+                </div>
+              </label>
+
+              {/* Pilihan 3: gemini-pro-latest */}
+              <label
+                onClick={() => setSelectedModel("gemini-pro-latest")}
+                className={`cursor-pointer p-3 rounded-xl border text-left transition-all flex items-start space-x-3 ${
+                  selectedModel === "gemini-pro-latest"
                     ? "bg-blue-50/70 border-blue-400 ring-2 ring-blue-400/20 shadow-xs"
                     : "bg-white border-slate-200 hover:border-slate-300"
                 }`}
@@ -158,16 +188,16 @@ export function AiSettingsModal({ isOpen, onClose, onSaved }: AiSettingsModalPro
                 <input
                   type="radio"
                   name="modalModelTier"
-                  value="gemini-3.1-pro"
-                  checked={selectedModel === "gemini-3.1-pro"}
-                  onChange={() => setSelectedModel("gemini-3.1-pro")}
+                  value="gemini-pro-latest"
+                  checked={selectedModel === "gemini-pro-latest"}
+                  onChange={() => setSelectedModel("gemini-pro-latest")}
                   className="mt-0.5 text-blue-600 focus:ring-blue-500"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2">
-                    <span className="text-xs font-bold text-slate-900">Gemini 3.1 Pro</span>
+                    <span className="text-xs font-bold text-slate-900">Gemini Pro Latest</span>
                     <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-purple-100 text-purple-800">
-                      Pro Tier (Terbaik)
+                      Pro Tier (Penalaran Rumit)
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500 mt-0.5">

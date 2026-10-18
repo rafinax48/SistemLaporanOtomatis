@@ -102,20 +102,23 @@ async function callGeminiNative(
     }
   }
 
-  // Model candidates berjenjang yang kompatibel dengan Google AI Studio
+  // Model candidates berjenjang yang aktif dan kompatibel dengan Google AI Studio
   const candidateModels = [
     initialModel,
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
-    "gemini-1.5-pro"
-  ].filter((m, i, arr) => arr.indexOf(m) === i);
+    "gemini-3.8-flash",
+    "gemini-flash-latest",
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-pro-latest",
+    "gemini-3.1-pro-preview",
+    "gemini-flash-lite-latest"
+  ].filter((m, i, arr) => arr.indexOf(m) === i && Boolean(m));
 
   let lastError = "Gagal memanggil Gemini API.";
 
   for (const model of candidateModels) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 35000);
+    const timeoutId = setTimeout(() => controller.abort(), 40000);
 
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
@@ -138,7 +141,11 @@ async function callGeminiNative(
         const errText = await res.text();
         console.warn(`Gemini API (${model}) Error HTTP ${res.status}:`, errText);
         lastError = `HTTP ${res.status}: ${errText.slice(0, 150)}`;
-        if (res.status === 404) continue; // model tidak tersedia di region ini, coba candidate selanjutnya
+        // Bila 404 (model tidak tersedia), 503 (demand tinggi), 429 (rate limit), atau 500+ (server error),
+        // segera beralih mencoba model cadangan berikutnya
+        if (res.status === 404 || res.status === 503 || res.status === 429 || res.status >= 500) {
+          continue;
+        }
         return { success: false, errorMsg: lastError };
       }
 
@@ -162,6 +169,8 @@ async function callGeminiNative(
       clearTimeout(timeoutId);
       lastError = err?.message || String(err);
       console.warn(`Gemini fetch error (${model}):`, lastError);
+      // Lanjut coba model berikutnya jika terjadi timeout atau fetch error
+      continue;
     }
   }
 
@@ -568,32 +577,35 @@ Berikan respon HANYA dalam JSON format valid berikut:
 Mata Kuliah Praktikum: "${matakuliah}"
 Topik Materi: "${namaMateri}"
 
-KODE PROGRAM NYATA MAHASISWA:
-${kodeProgram || "Tidak disertakan teks kode mentah (baca kode yang tampak pada gambar screenshot)"}
+KODE PROGRAM MAHASISWA:
+${kodeProgram ? kodeProgram : "(Tidak ada kode teks manual)"}
 
 KETERANGAN / CAPTION GAMBAR SCREENSHOT MAHASISWA:
 ${captions.length > 0 ? captions.map((c, i) => `Screenshot #${i + 1}: ${c}`).join("\n") : "Tidak ada caption manual"}
 
 Catatan Tambahan Mahasiswa: ${userNotes || "-"}
 
-INSTRUKSI SANGAT KETAT:
-1. BACA SELURUH BARIS KODE PROGRAM DAN TEKS PADA GAMBAR SCREENSHOT TERLAMPIR (baca teks terminal, window title, pesan error/sukses, output angka/string).
-2. DILARANG KERAS memberikan ulasan generik template C++ jika mahasiswa menuliskan bahasa Python, Java, SQL, atau keamanan jaringan!
-3. Sebutkan secara eksplisit bahasa pemrograman nyata, pustaka/library yang diimpor, nama fungsi nyata, dan keluaran yang tampak pada terminal screenshot.
+INSTRUKSI SANGAT PENTING:
+1. PERIKSA SELURUH GAMBAR SCREENSHOT TERLAMPIR SECARA TELITI:
+   - Baca seluruh teks pada screenshot: baris kode program, prompt terminal, pesan kompilasi/run, query SQL, atau jendela aplikasi praktikum.
+   - Deteksi bahasa pemrograman, runtime/compiler, dan library nyata yang digunakan (misal: Python, C/C++, Java, SQL/MySQL, PHP, Shell Linux, Wireshark, Cisco, dll).
+   - PERHATIAN: Jika teks "KODE PROGRAM MAHASISWA" di atas terlihat seperti kode template generik bawaan yang tidak sesuai dengan isi gambar screenshot, PRIORITASKAN SELALU BUKTI NYATA PADA GAMBAR SCREENSHOT!
+2. JANGAN PERNAH membuat ulasan generik template jika gambar screenshot memperlihatkan implementasi teknis tertentu.
+3. Cantumkan nama compiler/interpreter, tools, serta modul nyata yang terlihat pada bukti screenshot.
 4. Formatkan respon HANYA dalam JSON valid berikut:
 {
   "laprakBahan": [
     "Perangkat Keras PC / Laptop",
     "Sistem Operasi Komputer",
-    "Nama compiler / interpreter nyata",
-    "Pustaka/modul nyata yang terlihat di kode/gambar"
+    "Nama compiler / interpreter / software nyata yang digunakan",
+    "Pustaka / tools yang terlihat di kode atau screenshot"
   ],
   "laprakLangkah": [
     "- Langkah 1 persiapan lingkungan dan file kerja",
-    "- Langkah 2 implementasi fungsi dan logika kode",
-    "- Langkah 3 kompilasi, eksekusi, dan verifikasi keluaran terminal"
+    "- Langkah 2 implementasi logika kode atau perancangan skenario",
+    "- Langkah 3 kompilasi, eksekusi, dan verifikasi keluaran terminal/layar"
   ],
-  "laprakAnalisis": "Paragraf ulasan mendalam dan komprehensif mengenai hasil eksekusi pada screenshot dan implementasi kode mahasiswa."
+  "laprakAnalisis": "Paragraf ulasan mendalam, teknis, dan akademis mengenai proses eksekusi kode dan hasil pengujian yang tampak pada tangkapan layar mahasiswa."
 }`;
 
       const aiCall = await callGeminiNative(prompt, allImages);

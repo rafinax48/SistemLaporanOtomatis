@@ -52,9 +52,12 @@ export async function POST(req: Request) {
         if (data.imgLaprak) images.push({ data: data.imgLaprak, mediaType: "image/png" });
         if (data.imgPosttest) images.push({ data: data.imgPosttest, mediaType: "image/png" });
 
-        const prompt = `System: Expert Lab Assistant. 
-        Topic: ${data.materi}. 
-        Task: Analyze images & code. 
+        const prompt = `System: Expert Lab Assistant for Academic Practical Report.
+        Topic: ${data.materi}.
+        Student Code:
+        ${data.kodeProgram || "(No manual code provided, please analyze screenshots directly)"}
+        
+        Task: Analyze screenshots & student code carefully.
         Return JSON ONLY: { 
           "pretest_q": "string", 
           "laprak_bahan": ["string"], 
