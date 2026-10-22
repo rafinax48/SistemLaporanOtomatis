@@ -57,6 +57,7 @@ model LaporanMingguan {
 
   // Data Posttest
   imgPosttest    String?
+  kodePosttest   String?
   posttestTujuan String?
 
   // Hasil Dokumen

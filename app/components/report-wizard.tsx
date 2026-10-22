@@ -2191,11 +2191,19 @@ export function ReportWizard({
         })
       });
 
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        throw new Error(errJson?.error || errJson?.message || "Gagal memproses pembuatan laporan.");
+      }
+
       const data = await res.json();
-      if (data.id) {
+      if (data && data.id) {
         setReportId(data.id);
-        // Polling status sampai COMPLETED
+        let pollCount = 0;
+        const maxPoll = 25; // Maksimal 50 detik
+
         const pollTimer = setInterval(async () => {
+          pollCount++;
           try {
             const check = await fetch(`/api/laporan?praktikumId=${praktikum.id}&mingguKe=${mingguKe}`);
             const item = await check.json();
@@ -2207,13 +2215,30 @@ export function ReportWizard({
             } else if (item?.status === "FAILED") {
               setIsGenerating(false);
               clearInterval(pollTimer);
+              alert("Pembuatan dokumen mengalami kendala teknis. Silakan coba klik generate kembali.");
+            } else if (pollCount >= maxPoll) {
+              if (item?.docxPath) {
+                setGeneratedDocx(item.docxPath);
+                setGeneratedPdf(item.pdfPath || null);
+              }
+              setIsGenerating(false);
+              clearInterval(pollTimer);
             }
-          } catch {}
+          } catch {
+            if (pollCount >= maxPoll) {
+              setIsGenerating(false);
+              clearInterval(pollTimer);
+            }
+          }
         }, 2000);
+      } else {
+        setIsGenerating(false);
+        alert(data?.error || "Gagal memulai proses pembuatan dokumen laporan.");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
       setIsGenerating(false);
+      alert(e?.message || "Terjadi kesalahan saat memproses laporan.");
     }
   };
 

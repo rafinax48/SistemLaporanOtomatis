@@ -154,11 +154,15 @@ export async function POST(req: Request) {
         }
       });
       if (posttestCodes.length > 0) {
-        await prisma.$executeRawUnsafe(
-          "UPDATE LaporanMingguan SET kodePosttest = ? WHERE id = ?",
-          JSON.stringify(posttestCodes),
-          saved.id
-        );
+        try {
+          await prisma.$executeRawUnsafe(
+            "UPDATE LaporanMingguan SET kodePosttest = ? WHERE id = ?",
+            JSON.stringify(posttestCodes),
+            saved.id
+          );
+        } catch (rawErr) {
+          console.warn("Notice: kodePosttest save skipped:", rawErr);
+        }
       }
       return NextResponse.json({ success: true, item: saved });
     }
@@ -177,11 +181,15 @@ export async function POST(req: Request) {
     });
 
     if (posttestCodes.length > 0) {
-      await prisma.$executeRawUnsafe(
-        "UPDATE LaporanMingguan SET kodePosttest = ? WHERE id = ?",
-        JSON.stringify(posttestCodes),
-        reportItem.id
-      );
+      try {
+        await prisma.$executeRawUnsafe(
+          "UPDATE LaporanMingguan SET kodePosttest = ? WHERE id = ?",
+          JSON.stringify(posttestCodes),
+          reportItem.id
+        );
+      } catch (rawErr) {
+        console.warn("Notice: kodePosttest save skipped:", rawErr);
+      }
     }
 
     const uploadDir = path.join(process.cwd(), "public", "uploads");

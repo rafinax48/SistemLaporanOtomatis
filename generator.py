@@ -298,10 +298,11 @@ def convert_docx_to_pdf(docx_path, pdf_path):
     ps_cmd = (
         f"$word = New-Object -ComObject Word.Application; "
         f"$word.Visible = $false; "
+        f"$word.DisplayAlerts = 0; "
         f"try {{ "
-        f"  $doc = $word.Documents.Open('{abs_docx}'); "
+        f"  $doc = $word.Documents.Open('{abs_docx}', $false, $true); "
         f"  $doc.SaveAs([ref]'{abs_pdf}', [ref]17); "
-        f"  $doc.Close(); "
+        f"  $doc.Close([ref]$false); "
         f"}} finally {{ "
         f"  $word.Quit(); "
         f"}}"
@@ -312,7 +313,7 @@ def convert_docx_to_pdf(docx_path, pdf_path):
             ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
             capture_output=True,
             text=True,
-            timeout=45
+            timeout=25
         )
         return os.path.exists(pdf_path)
     except Exception as e:
