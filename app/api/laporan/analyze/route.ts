@@ -235,7 +235,10 @@ function inspectStudentArtifacts(
   const isKeamanan = combined.includes("keamanan") || combined.includes("security") || combined.includes("kripto") || combined.includes("crypto");
   const isJaringan = combined.includes("jaringan") || combined.includes("network") || combined.includes("cisco");
   const isBasisData = combined.includes("basis data") || combined.includes("database") || combined.includes("sql");
-  const isWeb = combined.includes("web") || combined.includes("frontend") || combined.includes("backend");
+  const isMultimedia = combined.includes("multimedia") || combined.includes("audio") || combined.includes("video") || combined.includes("animasi") || combined.includes("blender") || combined.includes("maya");
+  const isNLP = combined.includes("bahasa") || combined.includes("nlp") || combined.includes("text") || combined.includes("token") || combined.includes("stemming");
+  const isDeepLearning = combined.includes("mendalam") || combined.includes("deep") || combined.includes("neural") || combined.includes("cnn") || combined.includes("lstm");
+  const isWeb = combined.includes("web") || combined.includes("frontend") || combined.includes("backend") || codeLower.includes("<?php");
   const isSistemOperasi = combined.includes("sistem operasi") || combined.includes("os") || combined.includes("linux");
 
   // 1. Deteksi Bahasa Pemrograman & Toolchain Nyata
@@ -256,7 +259,7 @@ function inspectStudentArtifacts(
     });
   }
 
-  // Cek apakah ada kode nyata (bukan hanya template kosong C++ jika di matkul keamanan/db)
+  // Cek apakah ada kode nyata
   const hasRealPython =
     codeLower.includes("def ") ||
     codeLower.includes("import ") ||
@@ -271,7 +274,7 @@ function inspectStudentArtifacts(
     codeLower.includes("select ") ||
     codeLower.includes("insert into") ||
     codeLower.includes("alter table") ||
-    codeLower.includes("from ") && codeLower.includes("where ");
+    (codeLower.includes("from ") && codeLower.includes("where "));
 
   const hasRealJava =
     codeLower.includes("public class") ||
@@ -279,13 +282,33 @@ function inspectStudentArtifacts(
 
   const hasRealCpp =
     (codeLower.includes("#include") || codeLower.includes("cout <<") || codeLower.includes("cin >>") || codeLower.includes("std::")) &&
-    !isKeamanan && !isBasisData;
+    !isKeamanan && !isBasisData && !isMultimedia && !isNLP && !isDeepLearning && !isWeb;
 
-  // PRIORITAS 1: PYTHON (Sangat umum di Keamanan Komputer, Jaringan, AI, DS)
-  if (hasRealPython || (isKeamanan && !hasRealSql && !hasRealJava)) {
-    langName = "Python 3.x";
-    compilerRuntime = "Interpreter Python 3.x (Python Runtime)";
-    editorIde = "Visual Studio Code / Terminal Linux / Windows";
+  // PRIORITAS 1: PYTHON (Keamanan Komputer, NLP, Deep Learning, Data Science)
+  if (hasRealPython || isKeamanan || isNLP || isDeepLearning) {
+    if (isNLP) {
+      langName = "Python 3.x (Natural Language Processing)";
+      compilerRuntime = "Interpreter Python 3.10+ (Lingkungan NLP & Data Science)";
+      editorIde = "Visual Studio Code / Jupyter Notebook / Google Colab";
+      if (codeLower.includes("nltk")) libraries.push("NLTK");
+      if (codeLower.includes("sastrawi")) libraries.push("PySastrawi");
+      if (codeLower.includes("spacy")) libraries.push("SpaCy");
+      if (codeLower.includes("sklearn")) libraries.push("Scikit-Learn (TF-IDF)");
+      if (libraries.length === 0) libraries.push("NLTK", "PySastrawi", "Regex");
+    } else if (isDeepLearning) {
+      langName = "Python 3.x (Deep Learning Framework)";
+      compilerRuntime = "Interpreter Python 3.10+ dengan Akselerasi GPU CUDA";
+      editorIde = "Google Colab / Jupyter Lab / Visual Studio Code";
+      if (codeLower.includes("torch")) libraries.push("PyTorch");
+      if (codeLower.includes("tensorflow") || codeLower.includes("keras")) libraries.push("TensorFlow / Keras");
+      if (codeLower.includes("numpy")) libraries.push("NumPy");
+      if (codeLower.includes("matplotlib")) libraries.push("Matplotlib");
+      if (libraries.length === 0) libraries.push("TensorFlow", "Keras", "NumPy");
+    } else {
+      langName = "Python 3.x";
+      compilerRuntime = "Interpreter Python 3.x (Python Runtime)";
+      editorIde = "Visual Studio Code / Terminal Linux / Windows";
+    }
 
     // Pustaka import
     const pyImps = codeRaw.matchAll(/(?:^[ \t]*import[ \t]+([^\r\n]+)|^[ \t]*from[ \t]+([a-zA-Z0-9_]+)[ \t]+import[ \t]+([^\r\n]+))/gm);
@@ -325,7 +348,30 @@ function inspectStudentArtifacts(
       if (text && !printOutputs.includes(text.trim())) printOutputs.push(text.trim());
     }
   }
-  // PRIORITAS 2: SQL (Basis Data)
+  // PRIORITAS 2: MULTIMEDIA
+  else if (isMultimedia) {
+    langName = "Multimedia & Grafika Komputer";
+    compilerRuntime = "Software Pengolah Audio-Visual & Rendering 2D/3D (Adobe Premiere / Photoshop / Audacity / Maya / Blender)";
+    editorIde = "Visual Studio Code / Adobe Creative Cloud / Blender Studio / Web Browser";
+
+    if (codeLower.includes("canvas") || codeLower.includes("<script") || codeLower.includes("three")) libraries.push("Three.js / HTML5 Canvas");
+    if (codeLower.includes("mel") || codeLower.includes("maya")) libraries.push("Maya Embedded Language (MEL)");
+    if (libraries.length === 0) {
+      libraries.push("Adobe Premiere Pro", "Audacity Audio Editor", "Blender 3D", "Photoshop");
+    }
+  }
+  // PRIORITAS 3: WEB DINAMIS (PHP & JS)
+  else if (isWeb || codeLower.includes("<?php")) {
+    langName = codeLower.includes("<?php") ? "PHP 8.x & JavaScript" : "JavaScript / Node.js";
+    compilerRuntime = "Web Server Apache / Nginx & Node.js Runtime (XAMPP Control Panel)";
+    editorIde = "Visual Studio Code / Web Browser Google Chrome / Postman";
+
+    if (codeLower.includes("session")) libraries.push("Manajemen Session PHP");
+    if (codeLower.includes("pdo") || codeLower.includes("mysqli")) libraries.push("Ekstensi Database MySQLi / PDO");
+    if (codeLower.includes("json")) libraries.push("JSON Parser & REST API");
+    if (libraries.length === 0) libraries.push("PHP 8.x", "MySQL Database", "Bootstrap / Tailwind CSS");
+  }
+  // PRIORITAS 4: SQL (Basis Data)
   else if (hasRealSql || isBasisData) {
     langName = "SQL (Structured Query Language)";
     compilerRuntime = "RDBMS MySQL / MariaDB Server 8.0+";
@@ -342,7 +388,7 @@ function inspectStudentArtifacts(
       if (tm[1] && !functions.includes(`Tabel ${tm[1]}`)) functions.push(`Tabel ${tm[1]}`);
     }
   }
-  // PRIORITAS 3: JAVA
+  // PRIORITAS 5: JAVA
   else if (hasRealJava) {
     langName = "Java (JDK)";
     compilerRuntime = "Java Development Kit (JDK 17+) / JVM";
@@ -353,8 +399,8 @@ function inspectStudentArtifacts(
       if (m[1] && m[1] !== "main" && !functions.includes(m[1])) functions.push(m[1]);
     }
   }
-  // PRIORITAS 4: C / C++
-  else if (hasRealCpp || (!isKeamanan && !isBasisData && !isJaringan)) {
+  // PRIORITAS 6: C / C++
+  else {
     langName = codeLower.includes("cout") || codeLower.includes("std::") ? "C++" : "C/C++";
     compilerRuntime = "Compiler C++ (MinGW GCC / Clang / Dev-C++)";
     editorIde = "Visual Studio Code / Dev-C++ / Code::Blocks";
@@ -392,6 +438,14 @@ function inspectStudentArtifacts(
     tools.push("Wireshark Protocol Analyzer / Cisco Packet Tracer");
   } else if (isBasisData) {
     tools.push("Modul Praktikum Basis Data FTI UAD");
+  } else if (isMultimedia) {
+    tools.push("Aplikasi Desain & Pengolah Audio-Visual (Audacity / Blender / Premiere)");
+  } else if (isNLP) {
+    tools.push("Corpus Teks & Pustaka NLP (NLTK / Sastrawi)");
+  } else if (isDeepLearning) {
+    tools.push("Dataset Pelatihan Model & Akselerator GPU CUDA");
+  } else if (isWeb) {
+    tools.push("RDBMS MySQL & Postman API Client");
   }
 
   // 3. Susun Langkah Kerja Berbasis Fungsi, Kode, dan Caption Gambar
@@ -436,7 +490,7 @@ function inspectStudentArtifacts(
   // Langkah 6: Dokumentasi
   steps.push("Mendokumentasikan tangkapan layar (screenshot) bukti hasil eksekusi program ke dalam lembar laporan praktikum.");
 
-  // 4. Susun Analisis dan Ulasan Hasil SKOR 5 (Refleksi 5 Pilar Eksplisit)
+  // 4. Susun Analisis Teknis AI & Refleksi Ulasan Mahasiswa
   let fungsiUlasan = "";
   if (functions.length > 0) {
     const fnListStr = functions.slice(0, 3).map((f) => f.startsWith("Tabel") ? f : `\`${f}()\``).join(", ");
@@ -455,7 +509,7 @@ function inspectStudentArtifacts(
     outputUlasan = " Hasil eksekusi pada antarmuka terminal membuktikan bahwa luaran program berjalan konsisten dan tidak ditemukan indikasi galat sintaksis maupun runtime.";
   }
 
-  // Refleksi 5 Pilar Wajib (Standar SKOR 5):
+  // Komponen Refleksi untuk Ulasan Mahasiswa
   const pembelajaranText = `Melalui pelaksanaan praktikum pada mata kuliah "${praktikumNama || "Informatika"}" dengan materi "${materi || "Praktikum"}", mahasiswa memahami secara mendalam arsitektur komputasi dan kaidah implementasi program berbasis ${langName}.${fungsiUlasan} Mahasiswa mampu menganalisis keterkaitan antara struktur data masukan dan respon keluaran terminal secara analitis.`;
 
   let kendalaText = "Pada tahap awal pengujian, kendala teknis yang dihadapi mencakup penyesuaian dependensi runtime lingkungan kerja serta verifikasi penanganan tipe data masukan agar tidak memicu eksepsi saat kompilasi.";
@@ -463,8 +517,12 @@ function inspectStudentArtifacts(
     kendalaText = "Kendala teknis yang dihadapi adalah penyesuaian format encoding biner pada algoritma kriptografi serta sinkronisasi penanganan kunci enkripsi/dekripsi agar luaran digest hash tidak mengalami mismatch.";
   } else if (isBasisData) {
     kendalaText = "Kendala yang ditemui meliputi perancangan constraint integritas referensial antar entitas relasional dan optimasi klausul penggabungan tabel (JOIN) agar kueri tidak menghasilkan data duplikat.";
-  } else if (isJaringan) {
-    kendalaText = "Kendala yang dihadapi adalah konfigurasi listening port pada soket jaringan dan penanganan buffer data stream transmisi agar paket data tidak mengalami fragmentasi atau timeout.";
+  } else if (isMultimedia) {
+    kendalaText = "Kendala yang dihadapi adalah penyesuaian resolusi rendering, sinkronisasi timeline layer audio-visual, serta keterbatasan kapasitas komputasi perangkat saat proses ekspor aset media.";
+  } else if (isNLP) {
+    kendalaText = "Kendala yang ditemui mencakup penanganan karakter non-alfanumerik pada tahapan pembersihan teks (cleansing) serta penyesuaian korpus stopword bahasa Indonesia agar tokenisasi tetap mempertahankan konteks makna kalimat.";
+  } else if (isDeepLearning) {
+    kendalaText = "Kendala yang dialami adalah terjadinya overfitting pada iterasi awal pelatihan model serta penyesuaian ukuran batch (batch size) agar tidak melampaui memori VRAM GPU.";
   }
 
   let solusiText = "Solusi yang diterapkan adalah melakukan penelusuran galat melalui inspeksi pesan debug pada terminal konsol, memperbaiki sintaks implementasi kode program, serta menguji ulang kasus uji dengan masukan data bertahap.";
@@ -472,37 +530,58 @@ function inspectStudentArtifacts(
     solusiText = "Solusi yang diterapkan adalah menstandarkan format string input menggunakan konversi byte-string UTF-8 serta memverifikasi keluaran digest algoritma hash dengan toolkit keamanan terpercaya.";
   } else if (isBasisData) {
     solusiText = "Solusi yang diterapkan adalah memeriksa kembali aturan primary key dan foreign key dalam skema DDL serta menguji kueri DML menggunakan data uji sampel sebelum dieksekusi secara keseluruhan.";
+  } else if (isMultimedia) {
+    solusiText = "Solusi yang diterapkan adalah melakukan penataan keyframe secara presisi pada timeline, mengoptimasi parameter kompresi bitrate keluaran, serta memanfaatkan fitur caching render.";
+  } else if (isNLP) {
+    solusiText = "Solusi yang diterapkan adalah menyusun aturan ekspresi reguler (Regex) untuk penyaringan noise dan memanfaatkan kamus leksikal Sastrawi secara berurutan.";
+  } else if (isDeepLearning) {
+    solusiText = "Solusi yang diterapkan adalah menerapkan teknik regularisasi Dropout, normalisasi batch, serta mengatur learning rate decay selama proses optimasi bobot model.";
   }
 
   const hasilText = `${outputUlasan} Seluruh tahapan skenario laboratorium berhasil diselesaikan dengan baik, di mana program berjalan secara deterministik dan menghasilkan nilai luaran yang valid sesuai capaian modul.`;
   const temuanText = `Temuan penting dari pengujian laboratorium ini membuktikan bahwa efisiensi algoritma dan pemilihan struktur data yang tepat sangat mempengaruhi performa eksekusi program. Pemahaman konsep teoritis yang dipadukan dengan implementasi langsung berhasil memperkuat kompetensi teknis mahasiswa.`;
 
-  const analisis5Pilar = `1. Pembelajaran Materi Praktikum:
+  // E. ANALISIS PRAKTIKUM (Dihasilkan oleh AI - Analisis Teknis Komprehensif)
+  const analisisTeknisAI = `Berdasarkan pengujian dan implementasi program pada mata kuliah "${praktikumNama || "Informatika"}" dengan materi "${materi || "Praktikum"}", analisis teknis menunjukkan bahwa arsitektur kode berbasis ${langName} berhasil dirancang secara modular dan efisien.${fungsiUlasan}
+
+Alur eksekusi komputasi berlangsung secara deterministik dari inisialisasi lingkungan kerja, alokasi memori objek, hingga pemrosesan instruksi kondisional dan perulangan. Data masukan telah melalui tahapan validasi yang memadai sebelum diteruskan ke fungsi pemroses utama. ${outputUlasan}
+
+Dari aspek keandalan sistem, mekanisme penanganan eksepsi dan keterkaitan antara blok kode program dengan luaran pada tangkapan layar terminal membuktikan bahwa instruksi yang dieksekusi memiliki stabilitas tinggi tanpa terjadi kebocoran memori atau kesalahan runtime. Kinerja program konsisten dalam memproses berbagai variasi data uji sesuai sasaran capaian modul laboratorium.`;
+
+  // F. ULASAN PRAKTIKUM (Default Ulasan Mahasiswa - Input Manual)
+  const ulasanMahasiswaDefault = `1. Pembelajaran:
 ${pembelajaranText}
 
-2. Kendala yang Dihadapi:
+2. Kendala:
 ${kendalaText}
 
-3. Solusi Pemecahan Masalah:
+3. Solusi:
 ${solusiText}
 
-4. Hasil Akhir dan Pembahasan:
+4. Hasil:
 ${hasilText}
 
-5. Temuan dan Kesimpulan:
+5. Temuan:
 ${temuanText}`;
 
-  // Penjelasan Kontekstual Per Screenshot (Standar SKOR 5 Kriteria 2)
-  const imageExplanations = (captions.length > 0 ? captions : ["Hasil eksekusi program"]).map((c, idx) => ({
-    order: idx + 1,
-    caption: c.startsWith("Gambar") ? c : `Hasil Eksekusi dan Verifikasi Program (${c})`,
-    explanation: `Tangkapan layar pada Gambar 2.${idx + 1} di atas memperlihatkan proses eksekusi dan verifikasi program pada konsol terminal. Parameter uji yang dimasukkan berhasil diproses oleh logika kode berbasis ${langName}, menghasilkan luaran data yang konsisten dan membuktikan bahwa instruksi yang dirancang berjalan tanpa kesalahan runtime.`
-  }));
+  // Penjelasan Kontekstual Per Screenshot: FOKUS PADA ALUR EKSEKUSI & LUARAN TERMINAL (Point 2)
+  const imageExplanations = (captions.length > 0 ? captions : ["Hasil eksekusi program"]).map((c, idx) => {
+    const cleanCap = c.startsWith("Gambar") ? c : `Pengujian dan Luaran Program (${c})`;
+    const fnRef = functions[idx] ? `fungsi \`${functions[idx]}()\`` : "fungsi logika utama";
+    const outRef = printOutputs[idx] ? `menampilkan pesan luaran: "${printOutputs[idx]}"` : "menampilkan data keluaran yang terstruktur dan terverifikasi";
+
+    return {
+      order: idx + 1,
+      caption: cleanCap,
+      explanation: `Berdasarkan tangkapan layar Gambar 2.${idx + 1}, alur eksekusi program diawali dengan inisialisasi lingkungan kerja ${langName} dan pemanggilan ${fnRef} untuk memproses data masukan uji. Pada luaran terminal/konsol pengujian, sistem ${outRef} yang mengonfirmasi bahwa seluruh instruksi logika dieksekusi secara sukses tanpa mengalami galat sintaksis maupun runtime.`
+    };
+  });
 
   return {
     laprakBahan: tools,
     laprakLangkah: steps,
-    laprakAnalisis: analisis5Pilar,
+    laprakAnalisis: analisisTeknisAI,
+    laprakUlasan: ulasanMahasiswaDefault,
     laprakRefleksi: {
       pembelajaran: pembelajaranText,
       kendala: kendalaText,
@@ -546,6 +625,67 @@ function getPosttestHeuristic(
   }));
 
   return { posttestTujuan, imageExplanations };
+}
+
+function generateSingleImageExplanationFallback(
+  matakuliah: string,
+  materi: string,
+  prefix: string,
+  order: number,
+  userCaption: string,
+  kodeProgram?: string
+): { caption: string; explanation: string } {
+  const combined = `${matakuliah} ${materi} ${userCaption} ${kodeProgram || ""}`.toLowerCase();
+  const captionResult = userCaption && userCaption.trim()
+    ? userCaption.trim()
+    : `Hasil Eksekusi dan Luaran Terminal Program ${order}`;
+
+  if (combined.includes("multimedia") || combined.includes("video") || combined.includes("audio") || combined.includes("animasi")) {
+    return {
+      caption: userCaption || `Tampilan Antarmuka dan Pratinjau Luaran Media ${order}`,
+      explanation: `Pada tangkapan layar Gambar ${prefix}.${order} di atas, diperlihatkan antarmuka software pengolah multimedia selama proses penyuntingan dan penataan layer timeline. Alur kerja dimulai dari inisialisasi berkas aset, konfigurasi efek visual/audio, hingga eksekusi pengujian pratinjau (preview). Luaran visual dan gelombang audio membuktikan bahwa sinkronisasi frame berjalan lancar tanpa mengalami lag atau distorsi render.`
+    };
+  }
+
+  if (combined.includes("bahasa") || combined.includes("nlp") || combined.includes("token")) {
+    return {
+      caption: userCaption || `Hasil Eksekusi Pipeline Pemrosesan Teks pada Terminal ${order}`,
+      explanation: `Pada tangkapan layar Gambar ${prefix}.${order} di atas, ditampilkan konsol terminal hasil eksekusi skrip pengolahan teks. Alur program diawali dengan pembacaan korpus masukan, dilanjutkan dengan tahap case folding, pembersihan karakter non-alfanumerik, hingga proses tokenisasi. Luaran terminal secara eksplisit memperlihatkan daftar token yang terpisah secara presisi sesuai aturan pemodelan linguistik tanpa memicu galat runtime.`
+    };
+  }
+
+  if (combined.includes("mendalam") || combined.includes("deep") || combined.includes("neural") || combined.includes("cnn")) {
+    return {
+      caption: userCaption || `Grafik Pelatihan Model dan Evaluasi Metrik ${order}`,
+      explanation: `Pada tangkapan layar Gambar ${prefix}.${order} di atas, diperlihatkan log eksekusi terminal dan kurva performa pelatihan model. Alur komputasi menunjukkan proses forward pass, kalkulasi fungsi loss, dan pembaharuan bobot melalui backpropagation. Luaran pada konsol membuktikan penurunan nilai loss yang stabil serta peningkatan metrik akurasi seiring bertambahnya epoch pelatihan.`
+    };
+  }
+
+  if (combined.includes("web") || combined.includes("php") || combined.includes("login") || combined.includes("session")) {
+    return {
+      caption: userCaption || `Tampilan Antarmuka Web dan Respon Server ${order}`,
+      explanation: `Pada tangkapan layar Gambar ${prefix}.${order} di atas, ditampilkan halaman peramban web dan log respon server lokal. Alur pengujian mendemonstrasikan proses pengiriman formulir dengan metode HTTP POST, verifikasi kredensial pada layer logika, serta inisialisasi sesi pengguna. Luaran antarmuka dan konsol jaringan memverifikasi bahwa pertukaran data berhasil diproses dengan status kode HTTP 200 OK secara aman.`
+    };
+  }
+
+  if (combined.includes("keamanan") || combined.includes("kripto") || combined.includes("hash")) {
+    return {
+      caption: userCaption || `Keluaran Nilai Hash dan Uji Integritas Pesan ${order}`,
+      explanation: `Pada tangkapan layar Gambar ${prefix}.${order} di atas, ditampilkan hasil eksekusi program keamanan komputer pada konsol terminal. Alur program diawali dengan penerimaan string teks masukan yang kemudian diproses melalui algoritma fungsi hash satu arah. Luaran terminal memperlihatkan nilai digest heksadesimal dengan panjang bit yang tepat dan terbukti konsisten memenuhi prinsip efek avalanche.`
+    };
+  }
+
+  if (combined.includes("basis data") || combined.includes("database") || combined.includes("sql")) {
+    return {
+      caption: userCaption || `Hasil Eksekusi Kueri dan Tabel Data Relasional ${order}`,
+      explanation: `Pada tangkapan layar Gambar ${prefix}.${order} di atas, ditampilkan antarmuka konsol basis data beserta tabel rekaman hasil eksekusi kueri SQL. Alur eksekusi membuktikan validitas instruksi DDL/DML dalam memanipulasi tupel baris data sesuai integritas referensial. Luaran tabel terminal menunjukkan bahwa data tersimpan dan terpanggil secara akurat tanpa adanya anomali redudansi.`
+    };
+  }
+
+  return {
+    caption: captionResult,
+    explanation: `Pada tangkapan layar Gambar ${prefix}.${order} di atas, terdokumentasi jendela terminal pengujian program. Alur eksekusi memperlihatkan pemberian parameter masukan pengujian dan proses komputasi algoritma utama. Luaran konsol membuktikan bahwa program berjalan secara stabil, menyelesaikan perhitungan dengan presisi, dan mengeluarkan hasil yang sesuai dengan target spesifikasi modul praktikum.`
+  };
 }
 
 export async function POST(req: Request) {
@@ -644,18 +784,22 @@ ${captions.length > 0 ? captions.map((c, i) => `Screenshot #${i + 1}: ${c}`).joi
 Catatan Tambahan Mahasiswa: ${userNotes || "-"}
 
 INSTRUKSI STANDAR RUBRIK PENILAIAN SKOR 5 (NILAI MAKSIMAL):
-1. HASIL PRAKTIKUM & PEMBAHASAN SETIAP SCREENSHOT (SKOR 5):
-   - Analisis setiap gambar screenshot yang dilampirkan.
-   - Buatkan "imageExplanations": untuk SETIAP gambar screenshot, sertakan "caption" (judul formal) dan "explanation" (paragraf pembahasan teknis 2-4 kalimat yang menerangkan apa yang diuji, parameter yang dimasukkan, dan apa arti output pada terminal).
-2. REFLEKSI PRAKTIKUM 5 PILAR WAJIB (SKOR 5):
-   - Buatkan ulasan pengalaman praktikum yang SANGAT SPESIFIK (bukan generik) dengan memuat 5 pilar wajib:
-     a. "pembelajaran": Pemahaman konsep teori & algoritma praktikum yang dipelajari.
-     b. "kendala": Kendala teknis nyata / error kompilasi / konfigurasi yang dihadapi.
-     c. "solusi": Tindakan / solusi konkret dalam mengatasi kendala tersebut.
-     d. "hasil": Luaran akhir pengujian yang berhasil dicapai dan diverifikasi.
-     e. "temuan": Temuan penting / insight mengenai efisiensi komputasi atau algoritma.
-3. ALAT & BAHAN SERTA LANGKAH KERJA:
-   - "laprakBahan": Sebutkan hardware, OS, compiler/interpreter, dan pustaka/library yang nyata digunakan.
+1. PEMBAHASAN SETIAP SCREENSHOT (ALUR & LUARAN TERMINAL):
+   - Analisis setiap gambar screenshot yang dilampirkan mahasiswa.
+   - Buatkan "imageExplanations": untuk SETIAP gambar screenshot, sertakan "caption" (judul formal) dan "explanation" (paragraf pembahasan 2-4 kalimat yang WAJIB menguraikan:
+     a) Alur Eksekusi Program: inisialisasi lingkungan, alur logika perintah, fungsi yang dipanggil.
+     b) Luaran Terminal / Output: teks luaran, pesan status, atau nilai keluaran yang tampak pada konsol terminal/jendela aplikasi beserta maknanya).
+2. ANALISIS PRAKTIKUM (EKSPLISIT DIBUAT OLEH AI):
+   - "laprakAnalisis": Analisis teknis mendalam mengenai arsitektur kode, mekanisme kerja logika algoritma, modularitas fungsi, dan validasi fungsionalitas sistem.
+3. REFLEKSI ULASAN MAHASISWA (5 PILAR):
+   - "laprakUlasan": Draf ulasan refleksi mahasiswa memuat 5 pilar:
+     1. Pembelajaran: Pemahaman konsep materi.
+     2. Kendala: Kendala teknis / error yang dihadapi.
+     3. Solusi: Cara mengatasi kendala.
+     4. Hasil: Verifikasi keberhasilan pengujian.
+     5. Temuan: Insight / best practice algoritma.
+4. ALAT & BAHAN SERTA LANGKAH KERJA:
+   - "laprakBahan": Sebutkan hardware, OS, compiler/interpreter, dan software/tools nyata yang digunakan.
    - "laprakLangkah": Daftar langkah kerja sistematis diawali tanda strip "- ".
 
 Formatkan respon HANYA dalam JSON valid berikut:
@@ -663,7 +807,7 @@ Formatkan respon HANYA dalam JSON valid berikut:
   "laprakBahan": [
     "Perangkat Keras PC / Laptop",
     "Sistem Operasi Komputer",
-    "Compiler / Runtime nyata",
+    "Compiler / Software / Runtime nyata",
     "Pustaka / tools yang terlihat di kode atau screenshot"
   ],
   "laprakLangkah": [
@@ -674,39 +818,34 @@ Formatkan respon HANYA dalam JSON valid berikut:
   "imageExplanations": [
     {
       "order": 1,
-      "caption": "Hasil Eksekusi Program pada Terminal",
-      "explanation": "Pada tangkapan layar Gambar 2.1 di atas, program berhasil memproses data masukan... Terminal menampilkan luaran..."
+      "caption": "Hasil Eksekusi dan Verifikasi Program pada Terminal",
+      "explanation": "Berdasarkan tangkapan layar Gambar 2.1 di atas, alur eksekusi program diawali dengan... Pada luaran terminal, sistem menampilkan..."
     }
   ],
-  "laprakRefleksi": {
-    "pembelajaran": "...",
-    "kendala": "...",
-    "solusi": "...",
-    "hasil": "...",
-    "temuan": "..."
-  },
-  "laprakAnalisis": "1. Pembelajaran Materi Praktikum:\\n[Isi]\\n\\n2. Kendala yang Dihadapi:\\n[Isi]\\n\\n3. Solusi Pemecahan Masalah:\\n[Isi]\\n\\n4. Hasil Akhir dan Pembahasan:\\n[Isi]\\n\\n5. Temuan dan Kesimpulan:\\n[Isi]"
+  "laprakAnalisis": "Berdasarkan pengujian dan analisis teknis terhadap kode program dan screenshot...",
+  "laprakUlasan": "1. Pembelajaran:\\n[Isi]\\n\\n2. Kendala:\\n[Isi]\\n\\n3. Solusi:\\n[Isi]\\n\\n4. Hasil:\\n[Isi]\\n\\n5. Temuan:\\n[Isi]"
 }`;
 
       const aiCall = await callGeminiNative(prompt, allImages);
 
-      if (aiCall.success && aiCall.data && (aiCall.data.laprakBahan || aiCall.data.laprakLangkah || aiCall.data.laprakAnalisis || aiCall.data.laprakRefleksi)) {
+      if (aiCall.success && aiCall.data && (aiCall.data.laprakBahan || aiCall.data.laprakLangkah || aiCall.data.laprakAnalisis)) {
         let finalAnalisis = aiCall.data.laprakAnalisis || "";
+        let finalUlasan = aiCall.data.laprakUlasan || "";
         const ref = aiCall.data.laprakRefleksi;
-        if ((!finalAnalisis || !finalAnalisis.includes("1. Pembelajaran")) && ref) {
-          finalAnalisis = `1. Pembelajaran Materi Praktikum:
+        if (!finalUlasan && ref) {
+          finalUlasan = `1. Pembelajaran:
 ${ref.pembelajaran || ""}
 
-2. Kendala yang Dihadapi:
+2. Kendala:
 ${ref.kendala || ""}
 
-3. Solusi Pemecahan Masalah:
+3. Solusi:
 ${ref.solusi || ""}
 
-4. Hasil Akhir dan Pembahasan:
+4. Hasil:
 ${ref.hasil || ""}
 
-5. Temuan dan Kesimpulan:
+5. Temuan:
 ${ref.temuan || ""}`;
         }
 
@@ -722,7 +861,7 @@ ${ref.temuan || ""}`;
               "Melakukan pengujian dan memverifikasi hasil eksekusi terminal."
             ],
             laprakAnalisis: finalAnalisis || "Hasil praktikum telah berhasil dieksekusi dan diverifikasi sesuai modul.",
-            laprakRefleksi: ref || null,
+            laprakUlasan: finalUlasan || null,
             imageExplanations: Array.isArray(aiCall.data.imageExplanations) ? aiCall.data.imageExplanations : []
           }
         });
@@ -789,6 +928,69 @@ Berikan respon HANYA dalam format JSON valid:
         isAi: false,
         aiWarning: aiCall.errorMsg || "Google Gemini API Key belum valid atau belum diisi.",
         data: fallbackPosttest
+      });
+    }
+
+    // ----------------------------------------------------
+    // STEP: IMAGE EXPLANATION (Pembahasan Screenshot Tunggal)
+    // ----------------------------------------------------
+    if (step === "image_explanation") {
+      const targetImage = image || (allImages.length > 0 ? allImages[0] : null);
+      const targetOrder = body.order || 1;
+      const targetPrefix = body.sectionPrefix || "2";
+      const targetCaption = body.caption || captions[0] || "";
+
+      const prompt = `Anda adalah asisten instruktur laboratorium FTI Universitas Ahmad Dahlan.
+Mata Kuliah Praktikum: "${matakuliah}"
+Materi/Modul: "${namaMateri}"
+Nomor Gambar Laporan: Gambar ${targetPrefix}.${targetOrder}
+Caption Awal Mahasiswa: "${targetCaption || "Screenshot Hasil Pengujian Program"}"
+${kodeProgram ? `Kode Program Terkait:\n\`\`\`\n${kodeProgram.slice(0, 1500)}\n\`\`\`` : ""}
+
+Tugas Anda (Standar Rubrik SKOR 5 FTI UAD):
+1. Amati gambar screenshot yang dilampirkan oleh mahasiswa (antarmuka IDE, jendela editor, terminal konsol, web browser, grafik, atau software multimedia).
+2. Tuliskan pembahasan hasil screenshot yang formal, objektif, dan mendalam (1-2 paragraf padat).
+3. Pembahasan WAJIB secara eksplisit menguraikan:
+   a. Apa yang sedang ditampilkan pada layar/antarmuka kerja.
+   b. Alur tahapan pengujian atau alur eksekusi logika kode program.
+   c. Hasil luaran terminal/konsol atau respon sistem yang terlihat pada tangkapan layar, beserta validasi apakah pengujian berhasil tanpa galat/error.
+4. Buatkan juga rekomendasi caption resmi yang rapi jika caption awal masih kosong atau kurang formal.
+
+Berikan respon HANYA dalam JSON format valid:
+{
+  "caption": "Hasil Eksekusi Program ...",
+  "explanation": "Pada tangkapan layar Gambar ${targetPrefix}.${targetOrder} di atas, terlihat antarmuka ... Alur eksekusi program dimulai dari ... Luaran terminal membuktikan bahwa ..."
+}`;
+
+      const aiCall = await callGeminiNative(prompt, targetImage ? [targetImage] : []);
+
+      if (aiCall.success && aiCall.data && (aiCall.data.explanation || aiCall.data.raw)) {
+        return NextResponse.json({
+          success: true,
+          isAi: true,
+          modelUsed: aiCall.modelUsed,
+          data: {
+            caption: aiCall.data.caption || targetCaption || `Hasil Eksekusi Program ${targetOrder}`,
+            explanation: aiCall.data.explanation || aiCall.data.raw
+          }
+        });
+      }
+
+      // Heuristik fallback kontekstual
+      const fallbackExplanation = generateSingleImageExplanationFallback(
+        matakuliah,
+        namaMateri,
+        targetPrefix,
+        targetOrder,
+        targetCaption,
+        kodeProgram
+      );
+
+      return NextResponse.json({
+        success: true,
+        isAi: false,
+        aiWarning: aiCall.errorMsg || "Google Gemini API Key belum valid atau belum diisi. Menggunakan analisis kontekstual akademik.",
+        data: fallbackExplanation
       });
     }
 

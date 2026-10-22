@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   UploadCloud,
@@ -60,6 +61,7 @@ interface InitialData {
   laprakBahan?: string | null;
   laprakLangkah?: string | null;
   laprakAnalisis?: string | null;
+  laprakUlasan?: string | null;
   imgPosttest?: string | null;
   posttestTujuan?: string | null;
   kodePosttest?: string | null;
@@ -146,25 +148,50 @@ function getDefaultCodeTemplate(praktikumNama: string, mingguKe: number, isPostt
     return `# Praktikum Keamanan Komputer - Minggu ${mingguKe}\n# Program ${label}: Kriptografi & Keamanan Data\nimport hashlib\n\ndef hash_sha256(pesan: str) -> str:\n    """Fungsi hashing SHA-256 untuk memverifikasi integritas data."""\n    return hashlib.sha256(pesan.encode('utf-8')).hexdigest()\n\nif __name__ == "__main__":\n    data_uji = "Praktikum Keamanan Komputer UAD"\n    print(f"Data Asli (Plaintext) : {data_uji}")\n    print(f"Hasil Hash (SHA-256)   : {hash_sha256(data_uji)}")\n`;
   }
 
+  if (combined.includes("multimedia") || combined.includes("video") || combined.includes("audio") || combined.includes("animasi")) {
+    return `// Praktikum Teknik Multimedia - Minggu ${mingguKe}\n// Program ${label}: Pengolahan Media & Skrip Animasi/Grafika\nconsole.log("Inisialisasi Project Multimedia Minggu ${mingguKe}");\nconst mediaConfig = {\n    modul: "Modul ${mingguKe}",\n    status: "Rendering Engine Ready"\n};\nconsole.log("Konfigurasi Aset:", JSON.stringify(mediaConfig, null, 2));\n`;
+  }
+
+  if (combined.includes("bahasa") || combined.includes("nlp") || combined.includes("text")) {
+    return `# Praktikum Pemprosesan Bahasa Alami (NLP) - Minggu ${mingguKe}\n# Program ${label}: Text Processing & Tokenization\nimport re\n\ndef preprocess_teks(teks: str) -> list:\n    teks_bersih = re.sub(r'[^a-zA-Z\\s]', '', teks.lower())\n    return teks_bersih.split()\n\nkorpus_uji = "Praktikum Pemprosesan Bahasa Alami Informatika UAD Minggu ${mingguKe}"\ntoken_hasil = preprocess_teks(korpus_uji)\nprint("Teks Asli :", korpus_uji)\nprint("Hasil Tokenisasi :", token_hasil)\n`;
+  }
+
+  if (combined.includes("mendalam") || combined.includes("deep") || combined.includes("neural") || combined.includes("cnn")) {
+    return `# Praktikum Pembelajaran Mendalam - Minggu ${mingguKe}\n# Program ${label}: Deep Neural Network Architecture\nimport numpy as np\n\ndef relu(x):\n    return np.maximum(0, x)\n\nprint("Arsitektur Jaringan Saraf Tiruan Minggu ${mingguKe} Terinisialisasi.")\n`;
+  }
+
   if (combined.includes("basis data") || combined.includes("database") || combined.includes("sql")) {
     return `-- Praktikum Basis Data - Minggu ${mingguKe}\n-- Program ${label}: Skema Entitas Relasional & Kueri Data\nCREATE TABLE Mahasiswa (\n    nim VARCHAR(10) PRIMARY KEY,\n    nama VARCHAR(100) NOT NULL,\n    kelas VARCHAR(5) NOT NULL\n);\n\nINSERT INTO Mahasiswa (nim, nama, kelas) VALUES ('2400018208', 'Rafi Satya Prayoga', 'D');\nSELECT * FROM Mahasiswa;\n`;
+  }
+
+  if (combined.includes("web") || combined.includes("frontend") || combined.includes("backend")) {
+    return `<?php\n// Praktikum Pemrograman Web Dinamis - Minggu ${mingguKe}\n// Program ${label}\nsession_start();\necho "Praktikum Pemrograman Web Dinamis FTI UAD Minggu ${mingguKe}\\n";\n$koneksi_status = "Koneksi Basis Data Siap";\necho "Status: " . $koneksi_status . "\\n";\n?>\n`;
   }
 
   if (combined.includes("jaringan") || combined.includes("network") || combined.includes("cisco")) {
     return `# Praktikum Jaringan Komputer - Minggu ${mingguKe}\n# Program ${label}: Socket Programming & Transmisi Paket\nimport socket\n\nclient_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\nprint("Socket jaringan berhasil dibuat dan siap untuk transmisi data.")\n`;
   }
 
-  if (combined.includes("web") || combined.includes("frontend") || combined.includes("backend")) {
-    return `// Praktikum Pemrograman Web - Minggu ${mingguKe}\n// Program ${label}\nconsole.log("Praktikum Pemrograman Web FTI UAD Minggu ${mingguKe}");\n`;
-  }
-
   return `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Implementasi ${label} Minggu ${mingguKe}" << endl;\n    return 0;\n}\n`;
 }
 
-function getDefaultToolsAndMaterials(praktikumNama: string): string {
-  const combined = (praktikumNama || "").toLowerCase();
+function getDefaultToolsAndMaterials(praktikumNama: string, mingguKe?: number, materi?: string): string {
+  const combined = `${praktikumNama || ""} ${materi || ""}`.toLowerCase();
+
+  if (combined.includes("multimedia") || combined.includes("video") || combined.includes("audio") || combined.includes("animasi") || combined.includes("blender") || combined.includes("maya")) {
+    return "Perangkat Keras PC / Laptop, Sistem Operasi Komputer, Software Editor Video & Audio (Adobe Premiere / Audacity), Software Pemodelan 2D/3D (Maya / Blender), Web Browser Google Chrome";
+  }
+  if (combined.includes("bahasa") || combined.includes("nlp") || combined.includes("token") || combined.includes("sastrawi")) {
+    return "Perangkat Keras PC / Laptop, Sistem Operasi Komputer, Interpreter Python 3.10+, Visual Studio Code / Jupyter Notebook, Pustaka NLTK & PySastrawi";
+  }
+  if (combined.includes("mendalam") || combined.includes("deep") || combined.includes("neural") || combined.includes("cnn") || combined.includes("lstm")) {
+    return "Perangkat Keras PC / Laptop (Akselerasi GPU CUDA), Interpreter Python 3.10+, Google Colab / Jupyter Lab, Framework Deep Learning (PyTorch / TensorFlow / Keras)";
+  }
+  if (combined.includes("web") || combined.includes("php") || combined.includes("laravel")) {
+    return "Perangkat Keras PC / Laptop, Sistem Operasi Komputer, Web Server Apache / Nginx & MySQL (XAMPP Control Panel), Visual Studio Code, Web Browser Google Chrome";
+  }
   if (combined.includes("keamanan") || combined.includes("security") || combined.includes("kripto")) {
-    return "Perangkat Keras PC / Laptop, Sistem Operasi Komputer (Linux / Windows), Interpreter Python 3.x, Visual Studio Code / Terminal, Pustaka hashlib";
+    return "Perangkat Keras PC / Laptop, Sistem Operasi Komputer (Linux / Windows), Interpreter Python 3.x, Visual Studio Code / Terminal, Pustaka hashlib & cryptography, Wireshark";
   }
   if (combined.includes("basis data") || combined.includes("database") || combined.includes("sql")) {
     return "Perangkat Keras PC / Laptop, Sistem Operasi Komputer, RDBMS MySQL / MariaDB Server 8.0+, phpMyAdmin / DBeaver / Terminal SQL";
@@ -172,14 +199,32 @@ function getDefaultToolsAndMaterials(praktikumNama: string): string {
   if (combined.includes("jaringan") || combined.includes("network")) {
     return "Perangkat Keras PC / Laptop, Sistem Operasi Komputer, Cisco Packet Tracer / Wireshark Protocol Analyzer, Terminal Jaringan";
   }
-  if (combined.includes("web")) {
-    return "Perangkat Keras PC / Laptop, Sistem Operasi, Browser Google Chrome, Visual Studio Code, Node.js Runtime";
-  }
-  return "Perangkat Keras PC / Laptop, Compiler C++ (Dev-C++ / GCC), Library standar <iostream>";
+  return "Perangkat Keras PC / Laptop, Compiler C++ (MinGW GCC / Dev-C++), Visual Studio Code, Library standar <iostream>";
 }
 
-function getDefaultWorkSteps(praktikumNama: string, mingguKe: number): string {
-  const combined = (praktikumNama || "").toLowerCase();
+function getDefaultWorkSteps(praktikumNama: string, mingguKe: number, materi?: string): string {
+  const combined = `${praktikumNama || ""} ${materi || ""}`.toLowerCase();
+
+  if (combined.includes("multimedia") || combined.includes("video") || combined.includes("audio") || combined.includes("animasi")) {
+    return formatLangkahKerja(
+      `- Menyiapkan perangkat PC/Laptop dan membuka aplikasi pengolah media (Adobe Premiere / Audacity / Maya / Blender).\n- Mengimpor berkas aset multimedia sesuai instruksi materi praktikum Minggu ${mingguKe}.\n- Melakukan penataan timeline layer, penyuntingan aset, dan konfigurasi parameter rendering.\n- Menjalankan uji coba pratinjau (preview) dan mengekspor hasil luaran media.\n- Mendokumentasikan tangkapan layar (Gambar 2.1) hasil tampilan antarmuka dan luaran media.`
+    );
+  }
+  if (combined.includes("bahasa") || combined.includes("nlp")) {
+    return formatLangkahKerja(
+      `- Menyiapkan lingkungan kerja Python 3.x pada Visual Studio Code atau Jupyter Notebook.\n- Mengimpor pustaka pengolahan teks (NLTK / Sastrawi / Regex) untuk pemrosesan korpus.\n- Mengimplementasikan fungsi prapemrosesan teks sesuai modul NLP Minggu ${mingguKe}.\n- Menjalankan pengujian program pada konsol terminal dan memverifikasi luaran token data.\n- Mendokumentasikan tangkapan layar (Gambar 2.1) hasil keluaran konsol terminal.`
+    );
+  }
+  if (combined.includes("mendalam") || combined.includes("deep") || combined.includes("neural")) {
+    return formatLangkahKerja(
+      `- Menyiapkan runtime Python dengan akselerasi GPU pada Google Colab atau Jupyter Lab.\n- Mengimpor modul deep learning dan memuat dataset latih sesuai topik Minggu ${mingguKe}.\n- Merancang arsitektur model neural network dan mengonfigurasi fungsi loss serta optimizer.\n- Menjalankan proses pelatihan model dan mengevaluasi metrik performa luaran.\n- Mendokumentasikan tangkapan layar (Gambar 2.1) hasil grafik pelatihan atau evaluasi model.`
+    );
+  }
+  if (combined.includes("web")) {
+    return formatLangkahKerja(
+      `- Menjalankan server lokal Apache dan basis data MySQL melalui XAMPP Control Panel.\n- Membuka Visual Studio Code dan menuliskan skrip web sesuai modul praktikum Minggu ${mingguKe}.\n- Menguji fungsionalitas logika program dan interaksi antarmuka pada peramban web.\n- Memverifikasi respon pertukaran data pada peramban atau konsol jaringan.\n- Mendokumentasikan tangkapan layar (Gambar 2.1) hasil tampilan web dan luaran data.`
+    );
+  }
   if (combined.includes("keamanan") || combined.includes("security") || combined.includes("kripto")) {
     return formatLangkahKerja(
       `- Menyiapkan lingkungan pengembangan Python 3.x pada PC/Laptop dan membuka Visual Studio Code.\n- Membuat file lembar kerja baru sesuai modul praktikum Keamanan Komputer Minggu ${mingguKe}.\n- Mengimpor modul keamanan hashlib dan mendefinisikan fungsi algoritma kriptografi.\n- Menjalankan pengujian program pada konsol terminal dan mengamati nilai luaran hash.\n- Mendokumentasikan tangkapan layar (Gambar 2.1) hasil eksekusi terminal.`
@@ -195,16 +240,43 @@ function getDefaultWorkSteps(praktikumNama: string, mingguKe: number): string {
   );
 }
 
+// Analisis Teknis Praktikum (AI Generated)
 function getDefaultAnalysis(praktikumNama: string, mingguKe: number, materi?: string): string {
   const combined = (praktikumNama || "").toLowerCase();
   const topik = materi ? `"${materi}"` : `Minggu ${mingguKe}`;
+
+  if (combined.includes("multimedia") || combined.includes("video") || combined.includes("audio") || combined.includes("animasi")) {
+    return `Berdasarkan pengujian praktikum pada mata kuliah "${praktikumNama}" topik ${topik}, analisis teknis membuktikan bahwa integrasi aset media dan konfigurasi parameter rendering berjalan secara optimal. Alur pemrosesan layer pada timeline menghasilkan luaran audio-visual yang sinkron dan stabil tanpa mengalami penurunan kualitas frame rate atau distorsi audio.`;
+  }
+  if (combined.includes("bahasa") || combined.includes("nlp")) {
+    return `Berdasarkan pengujian praktikum pada mata kuliah "${praktikumNama}" topik ${topik}, analisis teknis menunjukkan bahwa tahapan pipeline pemrosesan teks berhasil mengeliminasi noise karakter dan memetakan korpus ke dalam struktur token yang terstandarisasi. Komputasi berjalan efisien dengan akurasi pemrosesan string yang konsisten sesuai kaidah linguistik komputasional.`;
+  }
   if (combined.includes("keamanan") || combined.includes("security") || combined.includes("kripto")) {
     return `Berdasarkan pengujian praktikum pada mata kuliah "${praktikumNama}" topik ${topik}, program keamanan dan kriptografi berhasil dijalankan dengan baik pada konsol terminal. Logika pemrosesan data uji berjalan secara akurat tanpa galat runtime, dan hasil luaran pada screenshot membuktikan ketercapaian modul praktikum.`;
   }
   if (combined.includes("basis data") || combined.includes("database") || combined.includes("sql")) {
     return `Berdasarkan pengujian praktikum pada mata kuliah "${praktikumNama}" topik ${topik}, instruksi kueri basis data berhasil dieksekusi dengan baik pada server database. Manipulasi data dan struktur tabel berjalan secara valid sesuai perancangan skema laboratorium.`;
   }
-  return `Berdasarkan pengujian praktikum pada mata kuliah "${praktikumNama}" topik ${topik}, program berhasil dijalankan dengan baik dan menghasilkan keluaran yang konsisten sesuai tujuan percobaan.`;
+  return `Berdasarkan pengujian praktikum pada mata kuliah "${praktikumNama}" topik ${topik}, analisis teknis membuktikan bahwa program berhasil dijalankan dengan baik dan menghasilkan keluaran yang konsisten sesuai tujuan percobaan tanpa adanya galat kompilasi atau runtime.`;
+}
+
+// Ulasan Refleksi Praktikum (User Input Manual - 5 Pilar)
+function getDefaultUlasan(praktikumNama: string, mingguKe: number, materi?: string): string {
+  const topik = materi ? `"${materi}"` : `Praktikum Minggu ke-${mingguKe}`;
+  return `1. Pembelajaran:
+Melalui pelaksanaan praktikum pada materi ${topik}, mahasiswa memahami konsep teoritis dan alur implementasi teknis secara menyeluruh ke dalam baris kode program secara mandiri.
+
+2. Kendala:
+Kendala teknis yang dihadapi selama pengujian adalah penyesuaian dependensi lingkungan kerja dan verifikasi parameter masukan agar tidak memicu eksepsi saat eksekusi.
+
+3. Solusi:
+Kendala teknis tersebut diselesaikan dengan menelusuri pesan debug pada konsol terminal, memeriksa dokumentasi modul, dan menyempurnakan struktur instruksi logika secara sistematis.
+
+4. Hasil:
+Program berhasil dieksekusi secara stabil dengan hasil luaran terminal yang valid dan presisi sesuai spesifikasi tugas laboratorium.
+
+5. Temuan:
+Temuan penting membuktikan bahwa penguasaan struktur logika algoritma serta ketelitian dalam konfigurasi dependensi sangat menentukan keberhasilan sistem komputasi.`;
 }
 
 // Helper kompresi dan downscale gambar di sisi browser agar payload ringan & teks tetap tajam
@@ -268,16 +340,68 @@ function OrderedImageSection({
   images,
   onChange,
   label,
-  sectionPrefix
+  sectionPrefix,
+  praktikumNama,
+  materi,
+  codes,
+  enableExplanation = true
 }: {
   images: OrderedImage[];
   onChange: (imgs: OrderedImage[]) => void;
   label: string;
   sectionPrefix: string;
+  praktikumNama?: string;
+  materi?: string;
+  codes?: OrderedCode[];
+  enableExplanation?: boolean;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const [replacingId, setReplacingId] = useState<string | null>(null);
+  const [generatingExplanationId, setGeneratingExplanationId] = useState<string | null>(null);
+
+  const handleGenerateSingleExplanation = async (item: OrderedImage) => {
+    setGeneratingExplanationId(item.id);
+    try {
+      const codeString = (codes && codes.length > 0)
+        ? codes.map((c) => `// File: ${c.title || `Program ${c.order}`}\n${c.code}`).join("\n\n")
+        : "";
+
+      const res = await fetch("/api/laporan/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          step: "image_explanation",
+          image: item.url,
+          order: item.order,
+          sectionPrefix,
+          caption: item.caption || "",
+          praktikumNama: praktikumNama || "",
+          materi: materi || "",
+          kodeProgram: codeString
+        })
+      });
+
+      const json = await res.json();
+      if (json.success && json.data) {
+        const updated = images.map((img) => {
+          if (img.id === item.id) {
+            return {
+              ...img,
+              caption: img.caption && img.caption.trim() ? img.caption : (json.data.caption || img.caption),
+              explanation: json.data.explanation || img.explanation
+            };
+          }
+          return img;
+        });
+        onChange(updated);
+      }
+    } catch (err) {
+      console.error("Gagal generate pembahasan screenshot:", err);
+    } finally {
+      setGeneratingExplanationId(null);
+    }
+  };
 
   const handleMultipleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -476,13 +600,47 @@ function OrderedImageSection({
                   placeholder="Keterangan / Caption gambar (contoh: Hasil Kompilasi Program)"
                   className="paper-input text-xs py-1.5"
                 />
-                <textarea
-                  rows={2}
-                  value={item.explanation || ""}
-                  onChange={(e) => updateExplanation(item.id, e.target.value)}
-                  placeholder="Pembahasan hasil screenshot (SKOR 5: jelaskan parameter, alur uji, & luaran terminal)..."
-                  className="paper-input text-xs py-1.5 resize-none text-slate-700 bg-slate-50/70"
-                />
+                {enableExplanation && (
+                  <div className="space-y-1 pt-0.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-[11px] font-bold text-slate-700">Pembahasan Screenshot:</span>
+                        <span className="text-[10px] text-slate-400">
+                          (Bebas ketik sendiri atau gunakan tombol AI)
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleGenerateSingleExplanation(item)}
+                          disabled={generatingExplanationId === item.id}
+                          className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[#002b66] text-[10.5px] font-bold transition-all shadow-2xs hover:border-[#002b66] cursor-pointer disabled:opacity-50"
+                          title="Generate pembahasan alur program dan luaran terminal secara otomatis dengan AI"
+                        >
+                          <Sparkles className={`w-3 h-3 text-amber-500 ${generatingExplanationId === item.id ? "animate-spin" : ""}`} />
+                          <span>{generatingExplanationId === item.id ? "Menyusun AI..." : "Generate AI"}</span>
+                        </button>
+                        {item.explanation && (
+                          <button
+                            type="button"
+                            onClick={() => updateExplanation(item.id, "")}
+                            className="text-[10px] text-slate-400 hover:text-rose-600 px-1 py-0.5 transition-colors cursor-pointer"
+                            title="Kosongkan untuk ketik manual sendiri"
+                          >
+                            Reset
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <textarea
+                      rows={2}
+                      value={item.explanation || ""}
+                      onChange={(e) => updateExplanation(item.id, e.target.value)}
+                      placeholder="Pembahasan hasil screenshot (SKOR 5: jelaskan parameter, alur uji, & luaran terminal)... Anda dapat mengetik sendiri atau klik tombol 'Generate AI' di atas."
+                      className="paper-input text-xs py-1.5 resize-none text-slate-700 bg-slate-50/70"
+                    />
+                  </div>
+                )}
               </div>
 
 
@@ -778,6 +936,7 @@ function LivePreviewPanel({
   laprakBahan,
   laprakLangkah,
   laprakAnalisis,
+  laprakUlasan,
   posttestCodes,
   posttestImages,
   posttestTujuan,
@@ -798,6 +957,7 @@ function LivePreviewPanel({
   laprakBahan: string;
   laprakLangkah: string;
   laprakAnalisis: string;
+  laprakUlasan: string;
   posttestCodes: OrderedCode[];
   posttestImages: OrderedImage[];
   posttestTujuan: string;
@@ -1020,7 +1180,7 @@ function LivePreviewPanel({
           A. Alat dan Bahan
         </div>
         <div className={`space-y-0.5 ${isMini ? "text-[7px]" : "text-xs"} text-slate-800 font-normal pl-1`}>
-          {(laprakBahan || "PC / Laptop, Compiler C++ (Dev-C++ / GCC), Library standar <iostream>")
+          {(laprakBahan || getDefaultToolsAndMaterials(praktikum.nama, mingguKe, materi))
             .split(",")
             .map((b, bIdx) => (
               <div key={bIdx}>- {b.trim()}</div>
@@ -1098,13 +1258,23 @@ function LivePreviewPanel({
         )}
       </div>
 
-      {/* E. Analisis dan Ulasan BOLD */}
+      {/* E. Analisis Praktikum BOLD */}
       <div>
         <div className={`font-bold ${isMini ? "text-[8px]" : "text-xs"} text-slate-900 mb-0.5`}>
-          E. Analisis dan Ulasan
+          E. Analisis Praktikum
         </div>
         <div className={`text-justify font-normal ${isMini ? "text-[6.5px] line-clamp-3" : "text-xs whitespace-pre-line"} text-slate-800 leading-relaxed pl-1`}>
-          {laprakAnalisis || "Berdasarkan pengujian praktikum, program berhasil dijalankan dengan baik dan menghasilkan keluaran yang konsisten sesuai tujuan percobaan."}
+          {laprakAnalisis || getDefaultAnalysis(praktikum.nama, mingguKe, materi)}
+        </div>
+      </div>
+
+      {/* F. Ulasan Praktikum BOLD */}
+      <div>
+        <div className={`font-bold ${isMini ? "text-[8px]" : "text-xs"} text-slate-900 mb-0.5`}>
+          F. Ulasan Praktikum
+        </div>
+        <div className={`text-justify font-normal ${isMini ? "text-[6.5px] line-clamp-3" : "text-xs whitespace-pre-line"} text-slate-800 leading-relaxed pl-1`}>
+          {laprakUlasan || getDefaultUlasan(praktikum.nama, mingguKe, materi)}
         </div>
       </div>
     </div>
@@ -1429,6 +1599,7 @@ export function ReportWizard({
   initialData: InitialData | null;
   profile?: { nama?: string; nim?: string; kelas?: string } | null;
 }) {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState<number>(1); // 1: Pretest, 2: Laprak, 3: Posttest, 4: Finalisasi
 
   // Metadata Laporan
@@ -1482,7 +1653,7 @@ export function ReportWizard({
         return initialData.laprakBahan;
       }
     }
-    return getDefaultToolsAndMaterials(praktikum.nama);
+    return getDefaultToolsAndMaterials(praktikum.nama, mingguKe, materi);
   });
   const [laprakLangkah, setLaprakLangkah] = useState<string>(() => {
     if (initialData?.laprakLangkah) {
@@ -1494,10 +1665,13 @@ export function ReportWizard({
         return formatLangkahKerja(initialData.laprakLangkah);
       }
     }
-    return getDefaultWorkSteps(praktikum.nama, mingguKe);
+    return getDefaultWorkSteps(praktikum.nama, mingguKe, materi);
   });
   const [laprakAnalisis, setLaprakAnalisis] = useState<string>(
     initialData?.laprakAnalisis || getDefaultAnalysis(praktikum.nama, mingguKe, materi)
+  );
+  const [laprakUlasan, setLaprakUlasan] = useState<string>(
+    initialData?.laprakUlasan || getDefaultUlasan(praktikum.nama, mingguKe, materi)
   );
   const [laprakAnalyzed, setLaprakAnalyzed] = useState<boolean>(!!initialData?.laprakAnalisis);
   const [laprakApproved, setLaprakApproved] = useState<boolean>(!!initialData?.laprakAnalisis);
@@ -1574,9 +1748,10 @@ export function ReportWizard({
           code: getDefaultCodeTemplate(praktikum.nama, mingguKe, false)
         }
       ]);
-      setLaprakBahan(getDefaultToolsAndMaterials(praktikum.nama));
-      setLaprakLangkah(getDefaultWorkSteps(praktikum.nama, mingguKe));
+      setLaprakBahan(getDefaultToolsAndMaterials(praktikum.nama, mingguKe, materi));
+      setLaprakLangkah(getDefaultWorkSteps(praktikum.nama, mingguKe, materi));
       setLaprakAnalisis(getDefaultAnalysis(praktikum.nama, mingguKe, materi));
+      setLaprakUlasan(getDefaultUlasan(praktikum.nama, mingguKe, materi));
       setLaprakApproved(false);
       setLaprakAnalyzed(false);
     }
@@ -1812,10 +1987,10 @@ export function ReportWizard({
           });
         }
       } else {
-        setLaprakBahan(getDefaultToolsAndMaterials(praktikum?.nama || ""));
+        setLaprakBahan(getDefaultToolsAndMaterials(praktikum?.nama || "", mingguKe, materi));
       }
     } catch {
-      setLaprakBahan(getDefaultToolsAndMaterials(praktikum?.nama || ""));
+      setLaprakBahan(getDefaultToolsAndMaterials(praktikum?.nama || "", mingguKe, materi));
     } finally {
       setGeneratingBahan(false);
     }
@@ -1856,16 +2031,16 @@ export function ReportWizard({
           });
         }
       } else {
-        setLaprakLangkah(getDefaultWorkSteps(praktikum?.nama || "", mingguKe));
+        setLaprakLangkah(getDefaultWorkSteps(praktikum?.nama || "", mingguKe, materi));
       }
     } catch {
-      setLaprakLangkah(getDefaultWorkSteps(praktikum?.nama || "", mingguKe));
+      setLaprakLangkah(getDefaultWorkSteps(praktikum?.nama || "", mingguKe, materi));
     } finally {
       setGeneratingLangkah(false);
     }
   };
 
-  // Dedicated AI Generator: Analisis dan Ulasan Hasil
+  // Dedicated AI Generator: Analisis Teknis Praktikum
   const runGenerateAnalisisAI = async () => {
     setGeneratingAnalisis(true);
     try {
@@ -1893,7 +2068,7 @@ export function ReportWizard({
         if (json.isAi) {
           setAiNotice({
             type: "success",
-            message: `Ulasan analisis hasil praktikum berhasil dibuat oleh AI Vision (${json.modelUsed || "Gemini"}).`
+            message: `Analisis teknis hasil praktikum berhasil dibuat oleh AI Vision (${json.modelUsed || "Gemini"}).`
           });
         }
       } else {
@@ -2005,7 +2180,8 @@ export function ReportWizard({
             codes: laprakCodes,
             bahan: laprakBahan.split(",").map((s) => s.trim()).filter(Boolean),
             langkah: formatLangkahKerja(laprakLangkah).split("\n").filter(Boolean),
-            analisis: laprakAnalisis
+            analisis: laprakAnalisis,
+            ulasan: laprakUlasan
           },
           posttestData: {
             images: posttestImages,
@@ -2135,7 +2311,28 @@ export function ReportWizard({
             </div>
             <div className="text-right">
               <span className="text-xs font-extrabold text-[#002b66] block">{praktikum.nama}</span>
-              <span className="text-[11px] text-amber-700 font-bold">Laporan Minggu ke-{mingguKe} · UAD</span>
+              <div className="flex items-center space-x-1.5 justify-end mt-0.5">
+                <span className="text-[11px] text-amber-700 font-bold">Laporan</span>
+                <select
+                  value={mingguKe}
+                  onChange={(e) => {
+                    const nextWeek = e.target.value;
+                    router.push(`/praktikum/${praktikum.id}/laporan/${nextWeek}`);
+                  }}
+                  className="text-[11px] font-bold text-amber-900 bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5 focus:outline-hidden focus:ring-1 focus:ring-amber-500 cursor-pointer hover:bg-amber-100 transition-colors"
+                  title="Pindah ke Minggu Lain"
+                >
+                  {Array.from({ length: 14 }, (_, i) => i + 1).map((w) => (
+                    <option key={w} value={w}>
+                      Minggu ke-{w}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-slate-300">·</span>
+                <span className="text-[10px] text-slate-500 font-medium hidden sm:inline max-w-[120px] truncate" title={materi}>
+                  {materi || "UAD"}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -2305,6 +2502,7 @@ export function ReportWizard({
                       }}
                       label="Screenshot / Foto Lembar Pretest (Terurut)"
                       sectionPrefix="1"
+                      enableExplanation={false}
                     />
 
                     {/* Action AI Analyze */}
@@ -2411,6 +2609,10 @@ export function ReportWizard({
                       }}
                       label="Screenshot Hasil Eksekusi / Program Laprak (Terurut)"
                       sectionPrefix="2"
+                      praktikumNama={praktikum.nama}
+                      materi={materi}
+                      codes={laprakCodes}
+                      enableExplanation={true}
                     />
 
                     {/* Action AI Analyze Laprak */}
@@ -2501,7 +2703,7 @@ export function ReportWizard({
                             setLaprakApproved(false);
                           }}
                           className="paper-input text-xs"
-                          placeholder="Contoh: PC / Laptop, Compiler C++ (Dev-C++ / GCC), Library <iostream>"
+                          placeholder={`Contoh: ${getDefaultToolsAndMaterials(praktikum.nama, mingguKe, materi)}`}
                         />
                         <p className="text-[10px] text-slate-500 italic">
                           * Pisahkan dengan tanda koma (,) untuk setiap alat dan bahan.
@@ -2593,15 +2795,20 @@ export function ReportWizard({
                         </p>
                       </div>
 
-                      {/* 3. Analisis dan Ulasan Hasil dengan Pilihan Manual / Generate AI */}
+                      {/* 3. E. Analisis Praktikum (Teknis & AI-Generated) */}
                       <div className="p-4 rounded-lg bg-white border border-slate-200 shadow-2xs space-y-2.5">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div>
-                            <label className="paper-label text-slate-800 text-xs font-bold">
-                              E. Analisis dan Ulasan Hasil
-                            </label>
+                            <div className="flex items-center space-x-2">
+                              <label className="paper-label text-slate-800 text-xs font-bold">
+                                E. Analisis Praktikum
+                              </label>
+                              <span className="text-[10px] text-blue-700 font-semibold bg-blue-50 px-2 py-0.2 rounded border border-blue-200">
+                                AI Generated / Teknis
+                              </span>
+                            </div>
                             <span className="text-[10px] text-slate-500 block">
-                              Dapat diisi manual atau disusun otomatis oleh AI berbasis materi praktikum dan kode program.
+                              Analisis teknis akademis logika algoritma kode, eksekusi runtime, dan luaran sistem.
                             </span>
                           </div>
 
@@ -2640,8 +2847,8 @@ export function ReportWizard({
                           <div className="flex items-center justify-between p-2.5 bg-blue-50/70 border border-blue-200 rounded-lg text-xs text-[#002b66]">
                             <span>
                               {generatingAnalisis
-                                ? "AI sedang menyusun analisis akademis dan ulasan hasil praktikum..."
-                                : "Analisis dan ulasan ilmiah berhasil di-generate dari pengamatan materi dan kode."}
+                                ? "AI sedang menyusun analisis teknis mendalam dari observasi kode & luaran terminal..."
+                                : "Analisis teknis berhasil disusun secara otomatis oleh AI."}
                             </span>
                             <button
                               type="button"
@@ -2663,8 +2870,55 @@ export function ReportWizard({
                             setLaprakApproved(false);
                           }}
                           className="paper-input text-xs leading-relaxed text-justify"
-                          placeholder="Analisis hasil pengujian praktikum..."
+                          placeholder="Analisis teknis alur logika kode, modularitas fungsi, dan hasil keluaran terminal..."
                         />
+                      </div>
+
+                      {/* 4. F. Ulasan Praktikum (Input Manual Mahasiswa - 5 Pilar Refleksi) */}
+                      <div className="p-4 rounded-lg bg-white border border-slate-200 shadow-2xs space-y-2.5">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <label className="paper-label text-slate-800 text-xs font-bold">
+                                F. Ulasan Praktikum
+                              </label>
+                              <span className="text-[10px] text-emerald-800 font-semibold bg-emerald-50 px-2 py-0.2 rounded border border-emerald-200">
+                                Input Manual Mahasiswa (Wajib)
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-slate-500 block">
+                              Refleksi personal mahasiswa mencakup 5 Pilar: Pembelajaran, Kendala, Solusi, Hasil, dan Temuan.
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLaprakUlasan(getDefaultUlasan(praktikum.nama, mingguKe, materi));
+                              setLaprakApproved(false);
+                            }}
+                            className="text-[11px] font-bold text-slate-600 hover:text-[#002b66] border border-slate-200 px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors self-start sm:self-auto"
+                            title="Gunakan template panduan 5 pilar resmi"
+                          >
+                            Template 5 Pilar
+                          </button>
+                        </div>
+
+                        <textarea
+                          rows={6}
+                          value={laprakUlasan}
+                          onChange={(e) => {
+                            setLaprakUlasan(e.target.value);
+                            setLaprakApproved(false);
+                          }}
+                          className="paper-input text-xs leading-relaxed text-justify font-sans"
+                          placeholder="1. Pembelajaran: ...&#10;2. Kendala: ...&#10;3. Solusi: ...&#10;4. Hasil: ...&#10;5. Temuan: ..."
+                        />
+                        <div className="p-2.5 rounded-lg bg-amber-50/70 border border-amber-200 text-[11px] text-amber-900 space-y-0.5">
+                          <p className="font-bold">Panduan Rubrik SKOR 5 Ulasan Mahasiswa:</p>
+                          <p className="text-amber-800">
+                            Bagian ini diisi manual oleh mahasiswa. Pastikan menguraikan kendala riil yang dihadapi saat praktikum dan solusi teknis yang diambil agar mendapatkan skor maksimal.
+                          </p>
+                        </div>
                       </div>
                     </div>
 
@@ -2741,6 +2995,10 @@ export function ReportWizard({
                       }}
                       label="Screenshot Output Program Posttest (Terurut)"
                       sectionPrefix="3"
+                      praktikumNama={praktikum.nama}
+                      materi={materi}
+                      codes={posttestCodes}
+                      enableExplanation={true}
                     />
 
                     {/* Action AI Analyze Posttest */}
@@ -2827,6 +3085,7 @@ export function ReportWizard({
                 laprakBahan={laprakBahan}
                 laprakLangkah={laprakLangkah}
                 laprakAnalisis={laprakAnalisis}
+                laprakUlasan={laprakUlasan}
                 posttestCodes={posttestCodes}
                 posttestImages={posttestImages}
                 posttestTujuan={posttestTujuan}

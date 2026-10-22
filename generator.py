@@ -354,6 +354,68 @@ def format_cover_jadwal(tanggal, tempat):
         
     return f"{clean_tgl} / {clean_tmp}" if clean_tmp else clean_tgl
 
+def get_dynamic_default_tools(nama_laporan, materi=""):
+    comb = f"{nama_laporan} {materi}".lower()
+    if any(k in comb for k in ["multimedia", "audio", "video", "animasi", "blender", "maya"]):
+        return [
+            "Perangkat Keras PC / Laptop",
+            "Sistem Operasi Komputer (Windows / Linux)",
+            "Software Pengolah Audio-Visual & Rendering 2D/3D (Adobe Premiere / Audacity / Maya / Blender)",
+            "Web Browser Google Chrome & Pemutar Media"
+        ]
+    if any(k in comb for k in ["bahasa", "nlp", "token", "sastrawi", "nltk"]):
+        return [
+            "Perangkat Keras PC / Laptop",
+            "Sistem Operasi Komputer",
+            "Interpreter Python 3.10+ (Lingkungan NLP & Data Science)",
+            "Visual Studio Code / Jupyter Notebook",
+            "Pustaka & Modul: NLTK, PySastrawi, Regex, Scikit-Learn"
+        ]
+    if any(k in comb for k in ["mendalam", "deep", "neural", "cnn", "lstm"]):
+        return [
+            "Perangkat Keras PC / Laptop (Akselerasi GPU CUDA)",
+            "Interpreter Python 3.10+",
+            "Google Colab / Jupyter Lab / Visual Studio Code",
+            "Pustaka & Modul: PyTorch, TensorFlow, Keras, NumPy, Matplotlib"
+        ]
+    if any(k in comb for k in ["web", "php", "laravel", "express"]):
+        return [
+            "Perangkat Keras PC / Laptop",
+            "Sistem Operasi Komputer",
+            "Web Server Apache / Nginx & Node.js Runtime (XAMPP Control Panel)",
+            "Visual Studio Code",
+            "RDBMS MySQL / MariaDB Server & Postman API Client"
+        ]
+    if any(k in comb for k in ["keamanan", "security", "kripto"]):
+        return [
+            "Perangkat Keras PC / Laptop",
+            "Sistem Operasi Komputer (Linux / Windows)",
+            "Interpreter Python 3.x",
+            "Terminal Konsol Linux / Windows",
+            "Perangkat Analisis Keamanan & Kriptografi (Pustaka hashlib, Wireshark)"
+        ]
+    if any(k in comb for k in ["basis data", "database", "sql"]):
+        return [
+            "Perangkat Keras PC / Laptop",
+            "Sistem Operasi Komputer",
+            "RDBMS MySQL / MariaDB Server 8.0+",
+            "phpMyAdmin / DBeaver / Terminal SQL",
+            "Modul Praktikum Basis Data FTI UAD"
+        ]
+    if any(k in comb for k in ["jaringan", "network", "cisco"]):
+        return [
+            "Perangkat Keras PC / Laptop",
+            "Sistem Operasi Komputer",
+            "Cisco Packet Tracer / Wireshark Protocol Analyzer",
+            "Terminal Jaringan"
+        ]
+    return [
+        "Perangkat Keras PC / Laptop",
+        "Compiler C++ (MinGW GCC / Clang / Dev-C++)",
+        "Visual Studio Code / Dev-C++",
+        "Library standar <iostream>"
+    ]
+
 def generate_report(user_input):
     if not os.path.exists(TEMPLATE_PATH):
         raise FileNotFoundError(f"Template Word tidak ditemukan pada: {TEMPLATE_PATH}")
@@ -589,7 +651,7 @@ def generate_report(user_input):
         else:
             bahan_list = [b.strip() for b in str(laprak_bahan_raw).split(",") if b.strip()]
     if not bahan_list:
-        bahan_list = ["PC / Laptop", "Compiler C++ (Dev-C++ / GCC)", "Library standar <iostream>"]
+        bahan_list = get_dynamic_default_tools(nama_laporan, materi)
 
     for b_item in bahan_list:
         clean_b = re.sub(r'^(?:[0-9]+[\.\)]\s*|[a-zA-Z][\.\)]\s*|[•\-\*]\s*)', '', b_item).strip()
@@ -678,10 +740,10 @@ def generate_report(user_input):
             r_cap_l = p_cap_l.add_run(f"Gambar 2.{l_idx}: {cap_l}")
             format_font(r_cap_l, size=10, name="Calibri", italic=True)
 
-            # Pembahasan Kontekstual Hasil Screenshot (Wajib SKOR 5 Kriteria 2)
+            # Pembahasan Kontekstual Hasil Screenshot (Alur & Luaran Terminal - SKOR 5)
             exp_text = str(l_img.get("explanation") or "").strip()
             if not exp_text:
-                exp_text = f"Tangkapan layar pada Gambar 2.{l_idx} mendokumentasikan hasil pengujian dan eksekusi program secara langsung pada terminal konsol. Parameter masukan yang diujikan berhasil diproses oleh alur logika instruksi tanpa kendala runtime, membuktikan keabsahan program yang dirancang."
+                exp_text = f"Berdasarkan tangkapan layar Gambar 2.{l_idx}, alur eksekusi program diawali dengan inisialisasi lingkungan kerja dan eksekusi instruksi logika kode program. Pada luaran terminal/konsol pengujian, sistem menampilkan keluaran hasil pengujian yang terstruktur dan valid tanpa adanya galat runtime."
 
             p_exp = doc.add_paragraph()
             p_exp.paragraph_format.space_before = Pt(2)
@@ -691,49 +753,77 @@ def generate_report(user_input):
             r_exp = p_exp.add_run(exp_text)
             format_font(r_exp, size=11, name="Calibri")
 
-    # E. Analisis dan Refleksi Praktikum (Refleksi 5 Pilar Wajib SKOR 5 Kriteria 3)
-    p_au_h = doc.add_paragraph()
-    p_au_h.paragraph_format.space_before = Pt(10)
-    p_au_h.paragraph_format.space_after = Pt(2)
-    r_au_h = p_au_h.add_run("E. Analisis dan Refleksi Praktikum")
-    format_font(r_au_h, size=11, name="Calibri", bold=True)
+    # =========================================================================
+    # E. Analisis Praktikum (Dihasilkan oleh AI)
+    # =========================================================================
+    p_an_h = doc.add_paragraph()
+    p_an_h.paragraph_format.space_before = Pt(10)
+    p_an_h.paragraph_format.space_after = Pt(2)
+    r_an_h = p_an_h.add_run("E. Analisis Praktikum")
+    format_font(r_an_h, size=11, name="Calibri", bold=True)
 
     laprak_analisis_raw = user_input.get('laprak_analisis') or user_input.get('laprakAnalisis') or ""
-    raw_str = str(laprak_analisis_raw).strip()
-    
-    # Pisahkan per blok pilar
-    blocks = [b.strip() for b in re.split(r'\n{2,}|\r\n\r\n', raw_str) if b.strip()]
-    if not blocks or len(blocks) <= 1:
-        blocks = [b.strip() for b in raw_str.split("\n") if b.strip()]
+    analisis_str = str(laprak_analisis_raw).strip()
+    if not analisis_str:
+        analisis_str = f"Berdasarkan pengujian dan implementasi program pada modul \"{materi}\", analisis teknis membuktikan bahwa struktur algoritma dan pemanggilan fungsi berjalan secara deterministik. Alur eksekusi kode mampu menangani masukan parameter uji secara valid dan menghasilkan keluaran yang konsisten dengan spesifikasi laboratorium tanpa kendala eksepsi memori atau runtime."
 
-    if not blocks:
-        blocks = [
-            "1. Pembelajaran Materi Praktikum:\nMelalui pelaksanaan praktikum ini, mahasiswa memahami konsep teoritis dan teknis dari materi yang diimplementasikan ke dalam kode program secara komprehensif.",
-            "2. Kendala yang Dihadapi:\nKendala teknis yang dihadapi selama pengujian adalah penyesuaian dependensi runtime lingkungan kerja serta verifikasi penanganan tipe data masukan.",
-            "3. Solusi Pemecahan Masalah:\nKendala teknis diselesaikan dengan melakukan penelusuran pesan debug pada konsol terminal dan menyempurnakan struktur logika algoritma secara sistematis.",
-            "4. Hasil Akhir dan Pembahasan:\nProgram berhasil dieksekusi secara stabil dengan hasil keluaran yang konsisten dan valid sesuai tujuan instruksional modul praktikum.",
-            "5. Temuan dan Kesimpulan:\nTemuan penting membuktikan bahwa efisiensi algoritma dan pemilihan struktur data yang tepat sangat mempengaruhi performa eksekusi komputasi."
-        ]
+    an_paragraphs = [p.strip() for p in re.split(r'\n{2,}|\r\n\r\n', analisis_str) if p.strip()]
+    if not an_paragraphs:
+        an_paragraphs = [analisis_str]
 
-    for block in blocks:
+    for a_para in an_paragraphs:
         p_an = doc.add_paragraph()
         p_an.paragraph_format.space_before = Pt(2)
         p_an.paragraph_format.space_after = Pt(4)
         p_an.paragraph_format.line_spacing = 1.15
         p_an.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        r_an = p_an.add_run(a_para)
+        format_font(r_an, size=11, name="Calibri")
 
-        # Pisahkan judul pilar jika berformat "1. Pembelajaran...: [isi]"
+    # =========================================================================
+    # F. Ulasan Praktikum (Diinput secara Manual oleh Mahasiswa / User)
+    # =========================================================================
+    p_ul_h = doc.add_paragraph()
+    p_ul_h.paragraph_format.space_before = Pt(10)
+    p_ul_h.paragraph_format.space_after = Pt(2)
+    r_ul_h = p_ul_h.add_run("F. Ulasan Praktikum")
+    format_font(r_ul_h, size=11, name="Calibri", bold=True)
+
+    laprak_ulasan_raw = user_input.get('laprak_ulasan') or user_input.get('laprakUlasan') or ""
+    ulasan_str = str(laprak_ulasan_raw).strip()
+
+    blocks = [b.strip() for b in re.split(r'\n{2,}|\r\n\r\n', ulasan_str) if b.strip()]
+    if not blocks or len(blocks) <= 1:
+        blocks = [b.strip() for b in ulasan_str.split("\n") if b.strip()]
+
+    if not blocks:
+        blocks = [
+            "1. Pembelajaran:\nMelalui pelaksanaan praktikum ini, mahasiswa memahami konsep teoritis dan teknis dari materi yang diimplementasikan ke dalam kode program secara mandiri.",
+            "2. Kendala:\nKendala teknis yang dihadapi selama pengujian adalah penyesuaian dependensi runtime lingkungan kerja serta verifikasi penanganan tipe data masukan.",
+            "3. Solusi:\nKendala teknis diselesaikan dengan melakukan penelusuran pesan debug pada konsol terminal dan menyempurnakan struktur logika algoritma secara sistematis.",
+            "4. Hasil:\nProgram berhasil dieksekusi secara stabil dengan hasil keluaran yang konsisten dan valid sesuai tujuan instruksional modul praktikum.",
+            "5. Temuan:\nTemuan penting membuktikan bahwa pemahaman alur kerja dan konfigurasi alat sangat menentukan kelancaran pengujian sistem komputasi."
+        ]
+
+    for block in blocks:
+        p_ul = doc.add_paragraph()
+        p_ul.paragraph_format.space_before = Pt(2)
+        p_ul.paragraph_format.space_after = Pt(4)
+        p_ul.paragraph_format.line_spacing = 1.15
+        p_ul.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+        # Format judul pilar tebal jika diawali "1. Pembelajaran: ..."
         m_head = re.match(r'^(\d+\.\s*[^:\n]+:)\s*([\s\S]*)', block)
         if m_head:
             heading_txt = m_head.group(1).strip() + " "
             body_txt = m_head.group(2).strip()
-            r_head = p_an.add_run(heading_txt)
+            r_head = p_ul.add_run(heading_txt)
             format_font(r_head, size=11, name="Calibri", bold=True)
-            r_body = p_an.add_run(body_txt)
+            r_body = p_ul.add_run(body_txt)
             format_font(r_body, size=11, name="Calibri", bold=False)
         else:
-            r_an = p_an.add_run(block)
-            format_font(r_an, size=11, name="Calibri")
+            r_ul = p_ul.add_run(block)
+            format_font(r_ul, size=11, name="Calibri")
 
     # =========================================================================
     # D. POSTTEST
@@ -819,10 +909,10 @@ def generate_report(user_input):
             r_cap_p = p_cap_p.add_run(f"Gambar 3.{pi_idx}: {cap_p}")
             format_font(r_cap_p, size=10, name="Calibri", italic=True)
 
-            # Pembahasan Kontekstual Output Posttest (Wajib SKOR 5)
+            # Pembahasan Kontekstual Output Posttest (Alur & Luaran Terminal - SKOR 5)
             exp_p_text = str(pi_img.get("explanation") or "").strip()
             if not exp_p_text:
-                exp_p_text = f"Gambar 3.{pi_idx} di atas mendokumentasikan hasil pengujian tugas mandiri posttest pada terminal. Eksekusi program berhasil membuktikan bahwa algoritma mampu menyelesaikan persoalan studi kasus yang ditugaskan dengan tepat dan sesuai batas spesifikasi."
+                exp_p_text = f"Berdasarkan tangkapan layar Gambar 3.{pi_idx}, alur eksekusi program tugas mandiri posttest berjalan secara independen untuk mengolah data kasus uji. Luaran terminal membuktikan bahwa keluaran program telah memenuhi kriteria spesifikasi masalah tanpa mengalami galat eksekusi."
 
             p_exp_p = doc.add_paragraph()
             p_exp_p.paragraph_format.space_before = Pt(2)

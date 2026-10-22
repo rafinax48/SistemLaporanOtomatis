@@ -111,6 +111,7 @@ export async function POST(req: Request) {
       if (laprakData.bahan !== undefined) updatePayload.laprakBahan = JSON.stringify(laprakData.bahan);
       if (laprakData.langkah !== undefined) updatePayload.laprakLangkah = JSON.stringify(laprakData.langkah);
       if (laprakData.analisis !== undefined) updatePayload.laprakAnalisis = laprakData.analisis;
+      if (laprakData.ulasan !== undefined) updatePayload.laprakUlasan = laprakData.ulasan;
     }
 
     // Posttest Data
@@ -204,6 +205,7 @@ export async function POST(req: Request) {
       laprak_bahan: updatePayload.laprakBahan ? (typeof updatePayload.laprakBahan === "string" ? JSON.parse(updatePayload.laprakBahan) : updatePayload.laprakBahan) : [],
       laprak_langkah: updatePayload.laprakLangkah ? (typeof updatePayload.laprakLangkah === "string" ? JSON.parse(updatePayload.laprakLangkah) : updatePayload.laprakLangkah) : [],
       laprak_analisis: updatePayload.laprakAnalisis,
+      laprak_ulasan: updatePayload.laprakUlasan || "",
       images_posttest: posttestImages,
       img_posttest: posttestImages[0]?.url || posttestImages[0]?.image || updatePayload.imgPosttest,
       codes_posttest: posttestCodes,

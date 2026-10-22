@@ -53,6 +53,7 @@ model LaporanMingguan {
   laprakBahan    String?   // JSON list
   laprakLangkah  String?   // JSON list
   laprakAnalisis String?
+  laprakUlasan   String?
 
   // Data Posttest
   imgPosttest    String?
