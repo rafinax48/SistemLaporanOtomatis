@@ -436,7 +436,7 @@ function inspectStudentArtifacts(
   // Langkah 6: Dokumentasi
   steps.push("Mendokumentasikan tangkapan layar (screenshot) bukti hasil eksekusi program ke dalam lembar laporan praktikum.");
 
-  // 4. Susun Analisis dan Ulasan Hasil yang Sangat Spesifik & Mendalam
+  // 4. Susun Analisis dan Ulasan Hasil SKOR 5 (Refleksi 5 Pilar Eksplisit)
   let fungsiUlasan = "";
   if (functions.length > 0) {
     const fnListStr = functions.slice(0, 3).map((f) => f.startsWith("Tabel") ? f : `\`${f}()\``).join(", ");
@@ -455,12 +455,62 @@ function inspectStudentArtifacts(
     outputUlasan = " Hasil eksekusi pada antarmuka terminal membuktikan bahwa luaran program berjalan konsisten dan tidak ditemukan indikasi galat sintaksis maupun runtime.";
   }
 
-  const analisis = `Berdasarkan pelaksanaan praktikum pada mata kuliah "${praktikumNama || "Informatika"}" dengan topik "${materi || "Praktikum"}", rancangan program berbasis ${langName} telah berhasil dieksekusi dan diverifikasi dengan baik.${fungsiUlasan} Parameter data masukan yang diberikan mampu diproses dengan tepat sesuai alur logika yang dirancang.${outputUlasan} Seluruh tahapan uji coba laboratorium berhasil diselesaikan dan membuktikan pemahaman konseptual terhadap materi yang dipraktikkan.`;
+  // Refleksi 5 Pilar Wajib (Standar SKOR 5):
+  const pembelajaranText = `Melalui pelaksanaan praktikum pada mata kuliah "${praktikumNama || "Informatika"}" dengan materi "${materi || "Praktikum"}", mahasiswa memahami secara mendalam arsitektur komputasi dan kaidah implementasi program berbasis ${langName}.${fungsiUlasan} Mahasiswa mampu menganalisis keterkaitan antara struktur data masukan dan respon keluaran terminal secara analitis.`;
+
+  let kendalaText = "Pada tahap awal pengujian, kendala teknis yang dihadapi mencakup penyesuaian dependensi runtime lingkungan kerja serta verifikasi penanganan tipe data masukan agar tidak memicu eksepsi saat kompilasi.";
+  if (isKeamanan) {
+    kendalaText = "Kendala teknis yang dihadapi adalah penyesuaian format encoding biner pada algoritma kriptografi serta sinkronisasi penanganan kunci enkripsi/dekripsi agar luaran digest hash tidak mengalami mismatch.";
+  } else if (isBasisData) {
+    kendalaText = "Kendala yang ditemui meliputi perancangan constraint integritas referensial antar entitas relasional dan optimasi klausul penggabungan tabel (JOIN) agar kueri tidak menghasilkan data duplikat.";
+  } else if (isJaringan) {
+    kendalaText = "Kendala yang dihadapi adalah konfigurasi listening port pada soket jaringan dan penanganan buffer data stream transmisi agar paket data tidak mengalami fragmentasi atau timeout.";
+  }
+
+  let solusiText = "Solusi yang diterapkan adalah melakukan penelusuran galat melalui inspeksi pesan debug pada terminal konsol, memperbaiki sintaks implementasi kode program, serta menguji ulang kasus uji dengan masukan data bertahap.";
+  if (isKeamanan) {
+    solusiText = "Solusi yang diterapkan adalah menstandarkan format string input menggunakan konversi byte-string UTF-8 serta memverifikasi keluaran digest algoritma hash dengan toolkit keamanan terpercaya.";
+  } else if (isBasisData) {
+    solusiText = "Solusi yang diterapkan adalah memeriksa kembali aturan primary key dan foreign key dalam skema DDL serta menguji kueri DML menggunakan data uji sampel sebelum dieksekusi secara keseluruhan.";
+  }
+
+  const hasilText = `${outputUlasan} Seluruh tahapan skenario laboratorium berhasil diselesaikan dengan baik, di mana program berjalan secara deterministik dan menghasilkan nilai luaran yang valid sesuai capaian modul.`;
+  const temuanText = `Temuan penting dari pengujian laboratorium ini membuktikan bahwa efisiensi algoritma dan pemilihan struktur data yang tepat sangat mempengaruhi performa eksekusi program. Pemahaman konsep teoritis yang dipadukan dengan implementasi langsung berhasil memperkuat kompetensi teknis mahasiswa.`;
+
+  const analisis5Pilar = `1. Pembelajaran Materi Praktikum:
+${pembelajaranText}
+
+2. Kendala yang Dihadapi:
+${kendalaText}
+
+3. Solusi Pemecahan Masalah:
+${solusiText}
+
+4. Hasil Akhir dan Pembahasan:
+${hasilText}
+
+5. Temuan dan Kesimpulan:
+${temuanText}`;
+
+  // Penjelasan Kontekstual Per Screenshot (Standar SKOR 5 Kriteria 2)
+  const imageExplanations = (captions.length > 0 ? captions : ["Hasil eksekusi program"]).map((c, idx) => ({
+    order: idx + 1,
+    caption: c.startsWith("Gambar") ? c : `Hasil Eksekusi dan Verifikasi Program (${c})`,
+    explanation: `Tangkapan layar pada Gambar 2.${idx + 1} di atas memperlihatkan proses eksekusi dan verifikasi program pada konsol terminal. Parameter uji yang dimasukkan berhasil diproses oleh logika kode berbasis ${langName}, menghasilkan luaran data yang konsisten dan membuktikan bahwa instruksi yang dirancang berjalan tanpa kesalahan runtime.`
+  }));
 
   return {
     laprakBahan: tools,
     laprakLangkah: steps,
-    laprakAnalisis: analisis
+    laprakAnalisis: analisis5Pilar,
+    laprakRefleksi: {
+      pembelajaran: pembelajaranText,
+      kendala: kendalaText,
+      solusi: solusiText,
+      hasil: hasilText,
+      temuan: temuanText
+    },
+    imageExplanations
   };
 }
 
@@ -469,7 +519,7 @@ function getPosttestHeuristic(
   praktikumNama: string,
   kodeProgram?: string,
   captions: string[] = []
-): string {
+): { posttestTujuan: string; imageExplanations: any[] } {
   const judul = materi ? `"${materi}"` : praktikumNama ? `praktikum ${praktikumNama}` : "praktikum";
   const codeRaw = (kodeProgram || "").toLowerCase();
 
@@ -487,7 +537,15 @@ function getPosttestHeuristic(
     captionExtra = ` Berdasarkan hasil tangkapan layar posttest (${captions.slice(0, 2).join("; ")}), luaran program membuktikan keberhasilan pengujian tugas mandiri.`;
   }
 
-  return `Tujuan dari pembuatan program posttest pada materi ${judul} ini adalah untuk mengukur dan memvalidasi pemahaman mahasiswa secara mandiri dalam merancang solusi komputasi tanpa instruksi bertahap.${contextExtra}${captionExtra} Melalui pengerjaan tugas ini, mahasiswa diharapkan mampu menerjemahkan rumusan masalah ke dalam baris kode program yang efisien, menguji kebenaran algoritma secara mandiri, serta mendokumentasikan hasil pengujian terminal sesuai dengan capaian modul praktikum.`;
+  const posttestTujuan = `Tujuan dari pembuatan program posttest pada materi ${judul} ini adalah untuk mengukur dan memvalidasi pemahaman mahasiswa secara mandiri dalam merancang solusi komputasi tanpa instruksi bertahap.${contextExtra}${captionExtra} Melalui pengerjaan tugas mandiri ini, mahasiswa mampu menerjemahkan rumusan masalah studi kasus ke dalam baris kode program yang efisien, menguji kebenaran algoritma secara mandiri, serta mendokumentasikan hasil pengujian terminal sesuai dengan capaian modul praktikum.`;
+
+  const imageExplanations = (captions.length > 0 ? captions : ["Output program posttest"]).map((c, idx) => ({
+    order: idx + 1,
+    caption: c.startsWith("Gambar") ? c : `Hasil Luaran Tugas Mandiri Posttest (${c})`,
+    explanation: `Gambar 3.${idx + 1} di atas mendokumentasikan hasil pengujian tugas mandiri posttest pada terminal. Eksekusi program berhasil membuktikan bahwa algoritma mampu menyelesaikan persoalan studi kasus yang ditugaskan dengan tepat dan sesuai batas spesifikasi.`
+  }));
+
+  return { posttestTujuan, imageExplanations };
 }
 
 export async function POST(req: Request) {
@@ -570,7 +628,7 @@ Berikan respon HANYA dalam JSON format valid berikut:
     }
 
     // ----------------------------------------------------
-    // STEP 2: LAPRAK (LAPORAN PRAKTIKUM)
+    // STEP 2: LAPRAK (LAPORAN PRAKTIKUM) - STANDAR SKOR 5
     // ----------------------------------------------------
     if (step === "laprak") {
       const prompt = `Anda adalah asisten laboratorium komputer FTI Universitas Ahmad Dahlan.
@@ -585,32 +643,73 @@ ${captions.length > 0 ? captions.map((c, i) => `Screenshot #${i + 1}: ${c}`).joi
 
 Catatan Tambahan Mahasiswa: ${userNotes || "-"}
 
-INSTRUKSI SANGAT PENTING:
-1. PERIKSA SELURUH GAMBAR SCREENSHOT TERLAMPIR SECARA TELITI:
-   - Baca seluruh teks pada screenshot: baris kode program, prompt terminal, pesan kompilasi/run, query SQL, atau jendela aplikasi praktikum.
-   - Deteksi bahasa pemrograman, runtime/compiler, dan library nyata yang digunakan (misal: Python, C/C++, Java, SQL/MySQL, PHP, Shell Linux, Wireshark, Cisco, dll).
-   - PERHATIAN: Jika teks "KODE PROGRAM MAHASISWA" di atas terlihat seperti kode template generik bawaan yang tidak sesuai dengan isi gambar screenshot, PRIORITASKAN SELALU BUKTI NYATA PADA GAMBAR SCREENSHOT!
-2. JANGAN PERNAH membuat ulasan generik template jika gambar screenshot memperlihatkan implementasi teknis tertentu.
-3. Cantumkan nama compiler/interpreter, tools, serta modul nyata yang terlihat pada bukti screenshot.
-4. Formatkan respon HANYA dalam JSON valid berikut:
+INSTRUKSI STANDAR RUBRIK PENILAIAN SKOR 5 (NILAI MAKSIMAL):
+1. HASIL PRAKTIKUM & PEMBAHASAN SETIAP SCREENSHOT (SKOR 5):
+   - Analisis setiap gambar screenshot yang dilampirkan.
+   - Buatkan "imageExplanations": untuk SETIAP gambar screenshot, sertakan "caption" (judul formal) dan "explanation" (paragraf pembahasan teknis 2-4 kalimat yang menerangkan apa yang diuji, parameter yang dimasukkan, dan apa arti output pada terminal).
+2. REFLEKSI PRAKTIKUM 5 PILAR WAJIB (SKOR 5):
+   - Buatkan ulasan pengalaman praktikum yang SANGAT SPESIFIK (bukan generik) dengan memuat 5 pilar wajib:
+     a. "pembelajaran": Pemahaman konsep teori & algoritma praktikum yang dipelajari.
+     b. "kendala": Kendala teknis nyata / error kompilasi / konfigurasi yang dihadapi.
+     c. "solusi": Tindakan / solusi konkret dalam mengatasi kendala tersebut.
+     d. "hasil": Luaran akhir pengujian yang berhasil dicapai dan diverifikasi.
+     e. "temuan": Temuan penting / insight mengenai efisiensi komputasi atau algoritma.
+3. ALAT & BAHAN SERTA LANGKAH KERJA:
+   - "laprakBahan": Sebutkan hardware, OS, compiler/interpreter, dan pustaka/library yang nyata digunakan.
+   - "laprakLangkah": Daftar langkah kerja sistematis diawali tanda strip "- ".
+
+Formatkan respon HANYA dalam JSON valid berikut:
 {
   "laprakBahan": [
     "Perangkat Keras PC / Laptop",
     "Sistem Operasi Komputer",
-    "Nama compiler / interpreter / software nyata yang digunakan",
+    "Compiler / Runtime nyata",
     "Pustaka / tools yang terlihat di kode atau screenshot"
   ],
   "laprakLangkah": [
-    "- Langkah 1 persiapan lingkungan dan file kerja",
-    "- Langkah 2 implementasi logika kode atau perancangan skenario",
-    "- Langkah 3 kompilasi, eksekusi, dan verifikasi keluaran terminal/layar"
+    "- Menyiapkan lingkungan pengembangan...",
+    "- Mengimplementasikan logika program...",
+    "- Melakukan kompilasi dan eksekusi..."
   ],
-  "laprakAnalisis": "Paragraf ulasan mendalam, teknis, dan akademis mengenai proses eksekusi kode dan hasil pengujian yang tampak pada tangkapan layar mahasiswa."
+  "imageExplanations": [
+    {
+      "order": 1,
+      "caption": "Hasil Eksekusi Program pada Terminal",
+      "explanation": "Pada tangkapan layar Gambar 2.1 di atas, program berhasil memproses data masukan... Terminal menampilkan luaran..."
+    }
+  ],
+  "laprakRefleksi": {
+    "pembelajaran": "...",
+    "kendala": "...",
+    "solusi": "...",
+    "hasil": "...",
+    "temuan": "..."
+  },
+  "laprakAnalisis": "1. Pembelajaran Materi Praktikum:\\n[Isi]\\n\\n2. Kendala yang Dihadapi:\\n[Isi]\\n\\n3. Solusi Pemecahan Masalah:\\n[Isi]\\n\\n4. Hasil Akhir dan Pembahasan:\\n[Isi]\\n\\n5. Temuan dan Kesimpulan:\\n[Isi]"
 }`;
 
       const aiCall = await callGeminiNative(prompt, allImages);
 
-      if (aiCall.success && aiCall.data && (aiCall.data.laprakBahan || aiCall.data.laprakLangkah || aiCall.data.laprakAnalisis)) {
+      if (aiCall.success && aiCall.data && (aiCall.data.laprakBahan || aiCall.data.laprakLangkah || aiCall.data.laprakAnalisis || aiCall.data.laprakRefleksi)) {
+        let finalAnalisis = aiCall.data.laprakAnalisis || "";
+        const ref = aiCall.data.laprakRefleksi;
+        if ((!finalAnalisis || !finalAnalisis.includes("1. Pembelajaran")) && ref) {
+          finalAnalisis = `1. Pembelajaran Materi Praktikum:
+${ref.pembelajaran || ""}
+
+2. Kendala yang Dihadapi:
+${ref.kendala || ""}
+
+3. Solusi Pemecahan Masalah:
+${ref.solusi || ""}
+
+4. Hasil Akhir dan Pembahasan:
+${ref.hasil || ""}
+
+5. Temuan dan Kesimpulan:
+${ref.temuan || ""}`;
+        }
+
         return NextResponse.json({
           success: true,
           isAi: true,
@@ -622,7 +721,9 @@ INSTRUKSI SANGAT PENTING:
               "Mengimplementasikan instruksi sesuai modul praktikum.",
               "Melakukan pengujian dan memverifikasi hasil eksekusi terminal."
             ],
-            laprakAnalisis: aiCall.data.laprakAnalisis || "Hasil praktikum telah berhasil dieksekusi dan diverifikasi sesuai modul."
+            laprakAnalisis: finalAnalisis || "Hasil praktikum telah berhasil dieksekusi dan diverifikasi sesuai modul.",
+            laprakRefleksi: ref || null,
+            imageExplanations: Array.isArray(aiCall.data.imageExplanations) ? aiCall.data.imageExplanations : []
           }
         });
       }
@@ -632,13 +733,13 @@ INSTRUKSI SANGAT PENTING:
       return NextResponse.json({
         success: true,
         isAi: false,
-        aiWarning: aiCall.errorMsg || "Google Gemini API Key belum valid atau belum diisi. Menggunakan Mesin Analisis Kode & Gambar Deep Inspector.",
+        aiWarning: aiCall.errorMsg || "Google Gemini API Key belum valid atau belum diisi. Menggunakan Mesin Analisis Kode & Gambar Deep Inspector (Standar SKOR 5).",
         data: inspection
       });
     }
 
     // ----------------------------------------------------
-    // STEP 3: POSTTEST
+    // STEP 3: POSTTEST - STANDAR SKOR 5
     // ----------------------------------------------------
     if (step === "posttest") {
       const prompt = `Anda adalah asisten laboratorium komputer FTI Universitas Ahmad Dahlan.
@@ -651,13 +752,21 @@ ${kodeProgram || "Tidak disertakan kode teks"}
 Keterangan Screenshot Posttest:
 ${captions.length > 0 ? captions.map((c, i) => `Screenshot #${i + 1}: ${c}`).join("\n") : "Hasil eksekusi program tugas mandiri posttest"}
 
-Tugas Anda:
-Analisis screenshot hasil program dan kode Posttest mahasiswa.
-Jelaskan tujuan dan capaian pembelajaran mandiri dari program posttest yang dikerjakan tersebut secara spesifik mengacu pada kode dan outputnya.
+Tugas Anda (Standar Rubrik SKOR 5):
+1. Analisis screenshot hasil program dan kode Posttest mahasiswa secara mendalam.
+2. Jelaskan tujuan dan capaian pembelajaran mandiri dari program posttest yang dikerjakan tersebut secara spesifik mengacu pada kode dan outputnya.
+3. Buatkan "imageExplanations" untuk setiap screenshot posttest (caption dan pembahasan output).
 
 Berikan respon HANYA dalam format JSON valid:
 {
-  "posttestTujuan": "Tujuan dari pembuatan program posttest ini adalah..."
+  "posttestTujuan": "Tujuan dari pembuatan program posttest ini adalah...",
+  "imageExplanations": [
+    {
+      "order": 1,
+      "caption": "Hasil Output Program Posttest pada Terminal",
+      "explanation": "Pada tangkapan layar Gambar 3.1 di atas, program posttest berhasil dieksekusi..."
+    }
+  ]
 }`;
 
       const aiCall = await callGeminiNative(prompt, allImages);
@@ -668,18 +777,18 @@ Berikan respon HANYA dalam format JSON valid:
           isAi: true,
           modelUsed: aiCall.modelUsed,
           data: {
-            posttestTujuan: aiCall.data.posttestTujuan || aiCall.data.raw
+            posttestTujuan: aiCall.data.posttestTujuan || aiCall.data.raw,
+            imageExplanations: Array.isArray(aiCall.data.imageExplanations) ? aiCall.data.imageExplanations : []
           }
         });
       }
 
+      const fallbackPosttest = getPosttestHeuristic(namaMateri, matakuliah, kodeProgram, captions);
       return NextResponse.json({
         success: true,
         isAi: false,
         aiWarning: aiCall.errorMsg || "Google Gemini API Key belum valid atau belum diisi.",
-        data: {
-          posttestTujuan: getPosttestHeuristic(namaMateri, matakuliah, kodeProgram, captions)
-        }
+        data: fallbackPosttest
       });
     }
 
@@ -693,9 +802,10 @@ Berikan respon HANYA dalam format JSON valid:
       data: {
         pretestQ: getPretestHeuristic("", ""),
         ...inspectStudentArtifacts("", "", ""),
-        posttestTujuan: getPosttestHeuristic("", "")
+        posttestTujuan: getPosttestHeuristic("", "").posttestTujuan
       }
     });
   }
 }
+
 

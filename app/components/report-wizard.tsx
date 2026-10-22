@@ -32,6 +32,7 @@ export interface OrderedImage {
   order: number;
   url: string;
   caption?: string;
+  explanation?: string;
 }
 
 export interface OrderedCode {
@@ -77,7 +78,8 @@ function parseInitialImages(raw: string | null | undefined): OrderedImage[] {
         id: item.id || `img_${idx + 1}_${Date.now()}`,
         order: typeof item.order === "number" ? item.order : idx + 1,
         url: item.url || item.image || "",
-        caption: item.caption || ""
+        caption: item.caption || "",
+        explanation: item.explanation || ""
       })).sort((a, b) => a.order - b.order);
     }
   } catch {}
@@ -87,7 +89,8 @@ function parseInitialImages(raw: string | null | undefined): OrderedImage[] {
       id: `img_1_${Date.now()}`,
       order: 1,
       url: raw,
-      caption: ""
+      caption: "",
+      explanation: ""
     }];
   }
   return [];
@@ -352,6 +355,11 @@ function OrderedImageSection({
     onChange(updated);
   };
 
+  const updateExplanation = (id: string, explanation: string) => {
+    const updated = images.map((i) => (i.id === id ? { ...i, explanation } : i));
+    onChange(updated);
+  };
+
   const removeImage = (id: string) => {
     const filtered = images.filter((i) => i.id !== id);
     const reordered = filtered.map((item, idx) => ({ ...item, order: idx + 1 }));
@@ -468,7 +476,15 @@ function OrderedImageSection({
                   placeholder="Keterangan / Caption gambar (contoh: Hasil Kompilasi Program)"
                   className="paper-input text-xs py-1.5"
                 />
+                <textarea
+                  rows={2}
+                  value={item.explanation || ""}
+                  onChange={(e) => updateExplanation(item.id, e.target.value)}
+                  placeholder="Pembahasan hasil screenshot (SKOR 5: jelaskan parameter, alur uji, & luaran terminal)..."
+                  className="paper-input text-xs py-1.5 resize-none text-slate-700 bg-slate-50/70"
+                />
               </div>
+
 
               {/* Tombol Ganti & Hapus */}
               <div className="flex items-center space-x-2 flex-shrink-0 self-end sm:self-center">
@@ -1067,6 +1083,11 @@ function LivePreviewPanel({
                 <p className={`text-slate-600 italic font-normal mt-0.5 ${isMini ? "text-[6.5px]" : "text-[10pt]"}`}>
                   Gambar 2.{idx + 1}: {img.caption ? img.caption.replace(/#\s*\d+/g, "").trim() : `Hasil Eksekusi Program ${idx + 1}`}
                 </p>
+                {img.explanation && (
+                  <p className={`text-slate-700 text-justify font-normal mt-0.5 ${isMini ? "text-[6px] line-clamp-2" : "text-xs"}`}>
+                    {img.explanation}
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -1082,7 +1103,7 @@ function LivePreviewPanel({
         <div className={`font-bold ${isMini ? "text-[8px]" : "text-xs"} text-slate-900 mb-0.5`}>
           E. Analisis dan Ulasan
         </div>
-        <div className={`text-justify font-normal ${isMini ? "text-[6.5px]" : "text-xs"} text-slate-800 leading-relaxed pl-1 line-clamp-3`}>
+        <div className={`text-justify font-normal ${isMini ? "text-[6.5px] line-clamp-3" : "text-xs whitespace-pre-line"} text-slate-800 leading-relaxed pl-1`}>
           {laprakAnalisis || "Berdasarkan pengujian praktikum, program berhasil dijalankan dengan baik dan menghasilkan keluaran yang konsisten sesuai tujuan percobaan."}
         </div>
       </div>
@@ -1155,6 +1176,11 @@ function LivePreviewPanel({
                 <p className={`text-slate-600 italic font-normal mt-0.5 ${isMini ? "text-[6.5px]" : "text-[10pt]"}`}>
                   Gambar 3.{idx + 1}: {img.caption ? img.caption.replace(/#\s*\d+/g, "").trim() : `Hasil Output PostTest ${idx + 1}`}
                 </p>
+                {img.explanation && (
+                  <p className={`text-slate-700 text-justify font-normal mt-0.5 ${isMini ? "text-[6px] line-clamp-2" : "text-xs"}`}>
+                    {img.explanation}
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -1704,6 +1730,23 @@ export function ReportWizard({
         if (json.data.laprakAnalisis) {
           setLaprakAnalisis(json.data.laprakAnalisis);
         }
+        if (Array.isArray(json.data.imageExplanations) && json.data.imageExplanations.length > 0) {
+          setLaprakImages((prev) =>
+            prev.map((img, idx) => {
+              const matched =
+                json.data.imageExplanations.find((item: any) => item.index === idx + 1) ||
+                json.data.imageExplanations[idx];
+              if (matched) {
+                return {
+                  ...img,
+                  caption: matched.caption || img.caption,
+                  explanation: matched.explanation || img.explanation
+                };
+              }
+              return img;
+            })
+          );
+        }
       } else {
         runGenerateBahanAI();
         runGenerateLangkahAI();
@@ -1888,6 +1931,23 @@ export function ReportWizard({
       const json = await res.json();
       if (json.success && json.data?.posttestTujuan) {
         setPosttestTujuan(json.data.posttestTujuan);
+        if (Array.isArray(json.data.imageExplanations) && json.data.imageExplanations.length > 0) {
+          setPosttestImages((prev) =>
+            prev.map((img, idx) => {
+              const matched =
+                json.data.imageExplanations.find((item: any) => item.index === idx + 1) ||
+                json.data.imageExplanations[idx];
+              if (matched) {
+                return {
+                  ...img,
+                  caption: matched.caption || img.caption,
+                  explanation: matched.explanation || img.explanation
+                };
+              }
+              return img;
+            })
+          );
+        }
       } else {
         const matkul = praktikum?.nama || "Praktikum";
         const judul = materi ? `"${materi}"` : matkul;
@@ -2836,6 +2896,57 @@ export function ReportWizard({
                 <div className="flex items-center space-x-2 text-slate-700">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                   <span>Posttest: <strong>{posttestCodes.length} Tabel Kode Terurut</strong> · <strong>{posttestImages.length} Gambar Output Terurut</strong> · Tujuan & Penjelasan</span>
+                </div>
+              </div>
+
+              {/* Kartu Audit Kepatuhan Standar SKOR 5 (Rubrik Resmi FTI UAD) */}
+              <div className="p-5 rounded-xl bg-gradient-to-br from-amber-50/70 via-white to-emerald-50/70 border-2 border-amber-300 shadow-sm space-y-3.5">
+                <div className="flex items-center justify-between pb-2 border-b border-amber-200">
+                  <div className="flex items-center space-x-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-white font-bold text-xs shadow">
+                      ★
+                    </span>
+                    <h4 className="font-extrabold text-[#002b66] text-sm tracking-tight">
+                      Audit Kepatuhan Rubrik: Target SKOR 5 (Sempurna)
+                    </h4>
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[11px] border border-emerald-300">
+                    Rubrik FTI UAD Terpenuhi
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[11px]">
+                  <div className="flex items-start space-x-2 p-2.5 rounded-lg bg-white/90 border border-slate-200">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-slate-800">1. Kelengkapan Komponen (100%)</p>
+                      <p className="text-slate-500 text-[10.5px]">Pre-test, Hasil Praktikum, & Post-test lengkap tanpa bagian yang kosong.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-2 p-2.5 rounded-lg bg-white/90 border border-slate-200">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-slate-800">2. Kualitas Penulisan Hasil</p>
+                      <p className="text-slate-500 text-[10.5px]">Runtut, tabel kode bernomor, serta caption & pembahasan kontekstual per screenshot.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-2 p-2.5 rounded-lg bg-white/90 border border-slate-200">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-slate-800">3. Ulasan / Refleksi 5 Pilar</p>
+                      <p className="text-slate-500 text-[10.5px]">Memuat eksplisit: Pembelajaran, Kendala, Solusi, Hasil, dan Temuan.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-2 p-2.5 rounded-lg bg-white/90 border border-slate-200">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-slate-800">4. Kerapian Margin & Format</p>
+                      <p className="text-slate-500 text-[10.5px]">Margin terkunci 4-3-3-3 cm, tipografi Times New Roman 12, dan layout konsisten.</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 

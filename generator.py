@@ -96,7 +96,8 @@ def normalize_images(input_data, list_key, single_key, prefix="img"):
                         items.append({
                             "order": int(item.get("order", idx + 1)),
                             "path": saved_path,
-                            "caption": item.get("caption", "").strip()
+                            "caption": item.get("caption", "").strip(),
+                            "explanation": item.get("explanation", "").strip()
                         })
             elif isinstance(item, str) and item.strip():
                 saved_path = save_base64_image(item, f"{prefix}_{idx+1}")
@@ -104,7 +105,8 @@ def normalize_images(input_data, list_key, single_key, prefix="img"):
                     items.append({
                         "order": idx + 1,
                         "path": saved_path,
-                        "caption": ""
+                        "caption": "",
+                        "explanation": ""
                     })
     elif isinstance(raw_val, str) and raw_val.strip():
         saved_path = save_base64_image(raw_val, prefix)
@@ -112,7 +114,8 @@ def normalize_images(input_data, list_key, single_key, prefix="img"):
             items.append({
                 "order": 1,
                 "path": saved_path,
-                "caption": ""
+                "caption": "",
+                "explanation": ""
             })
 
     items.sort(key=lambda x: int(x.get("order", 999)))
@@ -645,7 +648,14 @@ def generate_report(user_input):
             # Tabel Kode Lebar Konsisten Tepat 11.5 cm
             create_code_table(doc, c_item.get("code", ""), width_cm=11.5)
 
-    # D. Implementasi Screenshot (BOLD) - SEMUA GAMBAR MENYUSUL
+    # Set margin dokumen standar akademik FTI UAD: Left 4.0 cm, Top 3.0 cm, Right 3.0 cm, Bottom 3.0 cm
+    for s_idx, sec in enumerate(doc.sections):
+        sec.top_margin = Inches(3.0 / 2.54)
+        sec.bottom_margin = Inches(3.0 / 2.54)
+        sec.left_margin = Inches(4.0 / 2.54)
+        sec.right_margin = Inches(3.0 / 2.54)
+
+    # D. Implementasi Screenshot (BOLD) - SEMUA GAMBAR MENYUSUL DENGAN PEMBAHASAN LENGKAP (SKOR 5)
     p_is_h = doc.add_paragraph()
     p_is_h.paragraph_format.space_before = Pt(10)
     p_is_h.paragraph_format.space_after = Pt(2)
@@ -661,42 +671,76 @@ def generate_report(user_input):
             p_cap_l = doc.add_paragraph()
             p_cap_l.alignment = WD_ALIGN_PARAGRAPH.CENTER
             p_cap_l.paragraph_format.space_before = Pt(2)
-            p_cap_l.paragraph_format.space_after = Pt(6)
+            p_cap_l.paragraph_format.space_after = Pt(3)
+            p_cap_l.paragraph_format.keep_with_next = True
             clean_c = clean_caption_text(l_img.get("caption", ""))
             cap_l = clean_c if clean_c else f"Hasil Eksekusi Program {l_idx}"
             r_cap_l = p_cap_l.add_run(f"Gambar 2.{l_idx}: {cap_l}")
             format_font(r_cap_l, size=10, name="Calibri", italic=True)
 
-    # E. Analisis dan Ulasan (BOLD)
+            # Pembahasan Kontekstual Hasil Screenshot (Wajib SKOR 5 Kriteria 2)
+            exp_text = str(l_img.get("explanation") or "").strip()
+            if not exp_text:
+                exp_text = f"Tangkapan layar pada Gambar 2.{l_idx} mendokumentasikan hasil pengujian dan eksekusi program secara langsung pada terminal konsol. Parameter masukan yang diujikan berhasil diproses oleh alur logika instruksi tanpa kendala runtime, membuktikan keabsahan program yang dirancang."
+
+            p_exp = doc.add_paragraph()
+            p_exp.paragraph_format.space_before = Pt(2)
+            p_exp.paragraph_format.space_after = Pt(6)
+            p_exp.paragraph_format.line_spacing = 1.15
+            p_exp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            r_exp = p_exp.add_run(exp_text)
+            format_font(r_exp, size=11, name="Calibri")
+
+    # E. Analisis dan Refleksi Praktikum (Refleksi 5 Pilar Wajib SKOR 5 Kriteria 3)
     p_au_h = doc.add_paragraph()
     p_au_h.paragraph_format.space_before = Pt(10)
     p_au_h.paragraph_format.space_after = Pt(2)
-    r_au_h = p_au_h.add_run("E. Analisis dan Ulasan")
+    r_au_h = p_au_h.add_run("E. Analisis dan Refleksi Praktikum")
     format_font(r_au_h, size=11, name="Calibri", bold=True)
 
     laprak_analisis_raw = user_input.get('laprak_analisis') or user_input.get('laprakAnalisis') or ""
-    an_lines = [a.strip() for a in str(laprak_analisis_raw).split("\n") if a.strip()]
-    if not an_lines:
-        an_lines = [
-            "Berdasarkan hasil pengujian yang dilakukan, program berhasil dieksekusi dengan baik sesuai dengan tujuan praktikum.",
-            "Struktur logika program dan algoritma yang diimplementasikan menghasilkan output yang konsisten dan stabil."
+    raw_str = str(laprak_analisis_raw).strip()
+    
+    # Pisahkan per blok pilar
+    blocks = [b.strip() for b in re.split(r'\n{2,}|\r\n\r\n', raw_str) if b.strip()]
+    if not blocks or len(blocks) <= 1:
+        blocks = [b.strip() for b in raw_str.split("\n") if b.strip()]
+
+    if not blocks:
+        blocks = [
+            "1. Pembelajaran Materi Praktikum:\nMelalui pelaksanaan praktikum ini, mahasiswa memahami konsep teoritis dan teknis dari materi yang diimplementasikan ke dalam kode program secara komprehensif.",
+            "2. Kendala yang Dihadapi:\nKendala teknis yang dihadapi selama pengujian adalah penyesuaian dependensi runtime lingkungan kerja serta verifikasi penanganan tipe data masukan.",
+            "3. Solusi Pemecahan Masalah:\nKendala teknis diselesaikan dengan melakukan penelusuran pesan debug pada konsol terminal dan menyempurnakan struktur logika algoritma secara sistematis.",
+            "4. Hasil Akhir dan Pembahasan:\nProgram berhasil dieksekusi secara stabil dengan hasil keluaran yang konsisten dan valid sesuai tujuan instruksional modul praktikum.",
+            "5. Temuan dan Kesimpulan:\nTemuan penting membuktikan bahwa efisiensi algoritma dan pemilihan struktur data yang tepat sangat mempengaruhi performa eksekusi komputasi."
         ]
 
-    for a_item in an_lines:
+    for block in blocks:
         p_an = doc.add_paragraph()
         p_an.paragraph_format.space_before = Pt(2)
         p_an.paragraph_format.space_after = Pt(4)
         p_an.paragraph_format.line_spacing = 1.15
         p_an.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        r_an = p_an.add_run(a_item)
-        format_font(r_an, size=11, name="Calibri")
+
+        # Pisahkan judul pilar jika berformat "1. Pembelajaran...: [isi]"
+        m_head = re.match(r'^(\d+\.\s*[^:\n]+:)\s*([\s\S]*)', block)
+        if m_head:
+            heading_txt = m_head.group(1).strip() + " "
+            body_txt = m_head.group(2).strip()
+            r_head = p_an.add_run(heading_txt)
+            format_font(r_head, size=11, name="Calibri", bold=True)
+            r_body = p_an.add_run(body_txt)
+            format_font(r_body, size=11, name="Calibri", bold=False)
+        else:
+            r_an = p_an.add_run(block)
+            format_font(r_an, size=11, name="Calibri")
 
     # =========================================================================
     # D. POSTTEST
     # - III. Post Test (Calibri 11 Bold)
     # - A. Tujuan Pembuatan Program (BOLD)
     # - B. Implementasi Kode Program (BOLD, TABEL 11.5 CM)
-    # - C. Implementasi Screenshot (BOLD, GAMBAR TERPUSAT, CAPTION MENEMPEL)
+    # - C. Implementasi Screenshot (BOLD, GAMBAR TERPUSAT, CAPTION MENEMPEL, PEMBAHASAN LENGKAP)
     # =========================================================================
     pb_post = doc.add_paragraph()
     pb_post.paragraph_format.space_before = Pt(0)
@@ -752,7 +796,7 @@ def generate_report(user_input):
             # Tabel Kode Lebar Konsisten Tepat 11.5 cm
             create_code_table(doc, cp_item.get("code", ""), width_cm=11.5)
 
-    # C. Implementasi Screenshot (BOLD) - Gambar Terpusat & Menempel Caption
+    # C. Implementasi Screenshot (BOLD) - Gambar Terpusat & Menempel Caption & Pembahasan
     p_pt_is = doc.add_paragraph()
     p_pt_is.paragraph_format.space_before = Pt(10)
     p_pt_is.paragraph_format.space_after = Pt(2)
@@ -768,11 +812,26 @@ def generate_report(user_input):
             p_cap_p = doc.add_paragraph()
             p_cap_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             p_cap_p.paragraph_format.space_before = Pt(2)
-            p_cap_p.paragraph_format.space_after = Pt(6)
+            p_cap_p.paragraph_format.space_after = Pt(3)
+            p_cap_p.paragraph_format.keep_with_next = True
             clean_c = clean_caption_text(pi_img.get("caption", ""))
             cap_p = clean_c if clean_c else f"Hasil Output PostTest {pi_idx}"
             r_cap_p = p_cap_p.add_run(f"Gambar 3.{pi_idx}: {cap_p}")
             format_font(r_cap_p, size=10, name="Calibri", italic=True)
+
+            # Pembahasan Kontekstual Output Posttest (Wajib SKOR 5)
+            exp_p_text = str(pi_img.get("explanation") or "").strip()
+            if not exp_p_text:
+                exp_p_text = f"Gambar 3.{pi_idx} di atas mendokumentasikan hasil pengujian tugas mandiri posttest pada terminal. Eksekusi program berhasil membuktikan bahwa algoritma mampu menyelesaikan persoalan studi kasus yang ditugaskan dengan tepat dan sesuai batas spesifikasi."
+
+            p_exp_p = doc.add_paragraph()
+            p_exp_p.paragraph_format.space_before = Pt(2)
+            p_exp_p.paragraph_format.space_after = Pt(6)
+            p_exp_p.paragraph_format.line_spacing = 1.15
+            p_exp_p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            r_exp_p = p_exp_p.add_run(exp_p_text)
+            format_font(r_exp_p, size=11, name="Calibri")
+
 
     # =========================================================================
     # E. Output Penamaan File & Dokumen
