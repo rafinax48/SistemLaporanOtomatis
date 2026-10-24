@@ -202,6 +202,53 @@ function getDefaultToolsAndMaterials(praktikumNama: string, mingguKe?: number, m
   return "Perangkat Keras PC / Laptop, Compiler C++ (MinGW GCC / Dev-C++), Visual Studio Code, Library standar <iostream>";
 }
 
+function parseToolsAndMaterials(raw: string | string[] | undefined | null, defaultTools: string[] = []): string[] {
+  if (!raw) return defaultTools;
+  let rawItems: string[] = [];
+  if (Array.isArray(raw)) {
+    rawItems = raw.map((b) => String(b).trim()).filter(Boolean);
+  } else {
+    const rawStr = String(raw).trim();
+    if (rawStr.includes("\n")) {
+      rawItems = rawStr.split("\n").map((s) => s.trim()).filter(Boolean);
+    } else {
+      rawItems = rawStr.split(",").map((s) => s.trim()).filter(Boolean);
+    }
+  }
+
+  const merged: string[] = [];
+  for (const item of rawItems) {
+    let clean = item.replace(/^(?:[0-9]+[\.\)]\s*|[a-zA-Z][\.\)]\s*|[•\-\*]\s*)/, "").trim();
+    if (!clean) continue;
+
+    const lower = clean.toLowerCase();
+    let isContinuation = false;
+    if (lower.startsWith("dan ") || lower.startsWith("serta ") || lower.startsWith("and ") || lower.startsWith("& ")) {
+      isContinuation = true;
+    } else if (merged.length > 0 && !clean.includes(":") && merged[merged.length - 1].includes(":")) {
+      isContinuation = true;
+    }
+
+    if (isContinuation && merged.length > 0) {
+      merged[merged.length - 1] = `${merged[merged.length - 1]}, ${clean}`;
+    } else {
+      merged.push(clean);
+    }
+  }
+
+  return merged.length > 0 ? merged : defaultTools;
+}
+
+function cleanQuestionText(q: string): string {
+  let text = String(q || "").trim();
+  while (true) {
+    const next = text.replace(/^(?:[0-9]+[\.\)]\s*|[a-zA-Z][\.\)]\s*|[•\-\*]\s*)/, "").trim();
+    if (next === text) break;
+    text = next;
+  }
+  return text;
+}
+
 function getDefaultWorkSteps(praktikumNama: string, mingguKe: number, materi?: string): string {
   const combined = `${praktikumNama || ""} ${materi || ""}`.toLowerCase();
 
@@ -975,7 +1022,7 @@ function LivePreviewPanel({
         .filter(Boolean)
         .map((q, idx) => {
           const letter = String.fromCharCode(65 + idx);
-          const clean = q.replace(/^(?:[0-9]+[\.\)]\s*|[a-zA-Z][\.\)]\s*|[•\-\*]\s*)/, "").trim();
+          const clean = cleanQuestionText(q);
           return `${letter}. ${clean}`;
         })
     : [
@@ -1081,13 +1128,13 @@ function LivePreviewPanel({
         lineHeight: "1.35",
       }}
     >
-      {/* Title Pretest BOLD */}
+      {/* Title Pretest BOLD (Level 1: Indent 0) */}
       <div className={`font-bold ${isMini ? "text-[9px]" : "text-sm"} text-slate-900`}>
         Pre Test
       </div>
 
-      {/* Pertanyaan Pretest TIDAK BOLD & Abjad Kapital (A, B, C) */}
-      <div className="space-y-1 font-normal text-slate-800">
+      {/* Pertanyaan Pretest TIDAK BOLD & Abjad Kapital (A, B, C) (Level 2: Indent 0.5 cm) */}
+      <div className="space-y-1 font-normal text-slate-800 pl-1 sm:pl-2">
         {pretestQuestionsList.map((q, qIdx) => (
           <div key={qIdx} className="leading-snug">
             {q}
@@ -1169,49 +1216,48 @@ function LivePreviewPanel({
         lineHeight: "1.35",
       }}
     >
-      {/* II. Hasil Praktikum BOLD */}
+      {/* II. Hasil Praktikum BOLD (Level 1: Indent 0) */}
       <div className={`font-bold ${isMini ? "text-[9px]" : "text-sm"} text-slate-900`}>
         II. Hasil Praktikum
       </div>
 
-      {/* A. Alat dan Bahan BOLD */}
-      <div>
+      {/* A. Alat dan Bahan BOLD (Level 2: Indent 0.5 cm, Level 3 Bullets) */}
+      <div className="pl-1 sm:pl-2">
         <div className={`font-bold ${isMini ? "text-[8px]" : "text-xs"} text-slate-900 mb-0.5`}>
           A. Alat dan Bahan
         </div>
-        <div className={`space-y-0.5 ${isMini ? "text-[7px]" : "text-xs"} text-slate-800 font-normal pl-1`}>
-          {(laprakBahan || getDefaultToolsAndMaterials(praktikum.nama, mingguKe, materi))
-            .split(",")
+        <div className={`space-y-0.5 ${isMini ? "text-[7px]" : "text-xs"} text-slate-800 font-normal pl-2 sm:pl-3`}>
+          {parseToolsAndMaterials(laprakBahan, parseToolsAndMaterials(getDefaultToolsAndMaterials(praktikum.nama, mingguKe, materi)))
             .map((b, bIdx) => (
-              <div key={bIdx}>- {b.trim()}</div>
+              <div key={bIdx}>- {b}</div>
             ))}
         </div>
       </div>
 
-      {/* B. Langkah Kerja BOLD & Pustaka Poin '-' */}
-      <div>
+      {/* B. Langkah Kerja BOLD & Pustaka Poin '-' (Level 2: Indent 0.5 cm, Level 3 Bullets) */}
+      <div className="pl-1 sm:pl-2">
         <div className={`font-bold ${isMini ? "text-[8px]" : "text-xs"} text-slate-900 mb-0.5`}>
           B. Langkah Kerja
         </div>
-        <div className={`space-y-0.5 ${isMini ? "text-[7px]" : "text-xs"} text-slate-800 font-normal pl-1`}>
+        <div className={`space-y-0.5 ${isMini ? "text-[7px]" : "text-xs"} text-slate-800 font-normal pl-2 sm:pl-3`}>
           {stepsList.map((step, sIdx) => (
             <div key={sIdx}>{step}</div>
           ))}
         </div>
       </div>
 
-      {/* C. Implementasi Kode Program (KODE DULU SEMUA, LEBAR 11.5 CM) */}
-      <div>
+      {/* C. Implementasi Kode Program (Level 2: Indent 0.5 cm, Tabel 14.0 cm) */}
+      <div className="pl-1 sm:pl-2">
         <div className={`font-bold ${isMini ? "text-[8px]" : "text-xs"} text-slate-900 mb-1 flex items-center justify-between`}>
           <span>C. Implementasi Kode Program</span>
           <span className={`text-slate-500 font-normal ${isMini ? "text-[6px]" : "text-[10px]"}`}>
-            (Lebar Standar 11.5 cm)
+            (Lebar Standar 14.0 cm)
           </span>
         </div>
 
         <div className="space-y-1.5">
           {laprakCodes.map((codeItem) => (
-            <div key={codeItem.id} className="ml-0 mr-auto" style={{ width: "94%" }}>
+            <div key={codeItem.id} className="ml-0 mr-auto" style={{ width: "95%" }}>
               <div className={`font-bold text-slate-900 mb-0.5 ${isMini ? "text-[7px]" : "text-xs"}`}>
                 Tabel Kode 2.{codeItem.order}: {codeItem.title || `Program ${codeItem.order}`}
               </div>
@@ -1226,8 +1272,8 @@ function LivePreviewPanel({
         </div>
       </div>
 
-      {/* D. Implementasi Screenshot (SEMUA GAMBAR MENYUSUL) */}
-      <div>
+      {/* D. Implementasi Screenshot (Level 2: Gambar Center, Penjelasan Indent Level 3) */}
+      <div className="pl-1 sm:pl-2">
         <div className={`font-bold ${isMini ? "text-[8px]" : "text-xs"} text-slate-900 mb-1`}>
           D. Implementasi Screenshot
         </div>
@@ -1244,7 +1290,7 @@ function LivePreviewPanel({
                   Gambar 2.{idx + 1}: {img.caption ? img.caption.replace(/#\s*\d+/g, "").trim() : `Hasil Eksekusi Program ${idx + 1}`}
                 </p>
                 {img.explanation && (
-                  <p className={`text-slate-700 text-justify font-normal mt-0.5 ${isMini ? "text-[6px] line-clamp-2" : "text-xs"}`}>
+                  <p className={`text-slate-700 text-justify font-normal mt-0.5 pl-2 sm:pl-3 indent-2 sm:indent-3 ${isMini ? "text-[6px] line-clamp-2" : "text-xs"}`}>
                     {img.explanation}
                   </p>
                 )}
@@ -1259,21 +1305,21 @@ function LivePreviewPanel({
       </div>
 
       {/* E. Analisis Praktikum BOLD */}
-      <div>
+      <div className="pl-1 sm:pl-2">
         <div className={`font-bold ${isMini ? "text-[8px]" : "text-xs"} text-slate-900 mb-0.5`}>
           E. Analisis Praktikum
         </div>
-        <div className={`text-justify font-normal ${isMini ? "text-[6.5px] line-clamp-3" : "text-xs whitespace-pre-line"} text-slate-800 leading-relaxed pl-1`}>
+        <div className={`text-justify font-normal ${isMini ? "text-[6.5px] line-clamp-3" : "text-xs whitespace-pre-line"} text-slate-800 leading-relaxed pl-2 sm:pl-3 indent-2 sm:indent-3`}>
           {laprakAnalisis || getDefaultAnalysis(praktikum.nama, mingguKe, materi)}
         </div>
       </div>
 
       {/* F. Ulasan Praktikum BOLD */}
-      <div>
+      <div className="pl-1 sm:pl-2">
         <div className={`font-bold ${isMini ? "text-[8px]" : "text-xs"} text-slate-900 mb-0.5`}>
           F. Ulasan Praktikum
         </div>
-        <div className={`text-justify font-normal ${isMini ? "text-[6.5px] line-clamp-3" : "text-xs whitespace-pre-line"} text-slate-800 leading-relaxed pl-1`}>
+        <div className={`text-justify font-normal ${isMini ? "text-[6.5px] line-clamp-3" : "text-xs whitespace-pre-line"} text-slate-800 leading-relaxed pl-2 sm:pl-3 indent-2 sm:indent-3`}>
           {laprakUlasan || getDefaultUlasan(praktikum.nama, mingguKe, materi)}
         </div>
       </div>
@@ -1288,33 +1334,33 @@ function LivePreviewPanel({
         lineHeight: "1.35",
       }}
     >
-      {/* III. Post Test BOLD */}
+      {/* III. Post Test BOLD (Level 1: Indent 0) */}
       <div className={`font-bold ${isMini ? "text-[9px]" : "text-sm"} text-slate-900`}>
         III. Post Test
       </div>
 
-      {/* A. Tujuan Pembuatan Program BOLD */}
-      <div>
+      {/* A. Tujuan Pembuatan Program BOLD (Level 2: Indent 0.5 cm, Level 3 Penjelasan) */}
+      <div className="pl-1 sm:pl-2">
         <div className={`font-bold ${isMini ? "text-[8px]" : "text-xs"} text-slate-900 mb-0.5`}>
           A. Tujuan Pembuatan Program
         </div>
-        <div className={`text-justify font-normal ${isMini ? "text-[6.5px]" : "text-xs"} text-slate-800 leading-relaxed pl-1`}>
+        <div className={`text-justify font-normal ${isMini ? "text-[6.5px]" : "text-xs"} text-slate-800 leading-relaxed pl-2 sm:pl-3 indent-2 sm:indent-3`}>
           {posttestTujuan || "Tujuan dari pembuatan program tugas mandiri / posttest ini adalah untuk memperdalam pemahaman mengenai materi praktikum yang telah dipelajari."}
         </div>
       </div>
 
-      {/* B. Implementasi Kode Program BOLD (11.5 CM) */}
-      <div>
+      {/* B. Implementasi Kode Program BOLD (Level 2: Indent 0.5 cm, Tabel 14.0 cm) */}
+      <div className="pl-1 sm:pl-2">
         <div className={`font-bold ${isMini ? "text-[8px]" : "text-xs"} text-slate-900 mb-1 flex items-center justify-between`}>
           <span>B. Implementasi Kode Program</span>
           <span className={`text-slate-500 font-normal ${isMini ? "text-[6px]" : "text-[10px]"}`}>
-            (Lebar Standar 11.5 cm)
+            (Lebar Standar 14.0 cm)
           </span>
         </div>
 
         <div className="space-y-1.5">
           {posttestCodes.map((codeItem) => (
-            <div key={codeItem.id} className="ml-0 mr-auto" style={{ width: "94%" }}>
+            <div key={codeItem.id} className="ml-0 mr-auto" style={{ width: "95%" }}>
               <div className={`font-bold text-slate-900 mb-0.5 ${isMini ? "text-[7px]" : "text-xs"}`}>
                 Tabel Kode 3.{codeItem.order}: {codeItem.title || `Program Posttest ${codeItem.order}`}
               </div>
@@ -1329,8 +1375,8 @@ function LivePreviewPanel({
         </div>
       </div>
 
-      {/* C. Implementasi Screenshot BOLD */}
-      <div>
+      {/* C. Implementasi Screenshot BOLD (Level 2: Gambar Center, Penjelasan Indent Level 3) */}
+      <div className="pl-1 sm:pl-2">
         <div className={`font-bold ${isMini ? "text-[8px]" : "text-xs"} text-slate-900 mb-1`}>
           C. Implementasi Screenshot
         </div>
@@ -1347,7 +1393,7 @@ function LivePreviewPanel({
                   Gambar 3.{idx + 1}: {img.caption ? img.caption.replace(/#\s*\d+/g, "").trim() : `Hasil Output PostTest ${idx + 1}`}
                 </p>
                 {img.explanation && (
-                  <p className={`text-slate-700 text-justify font-normal mt-0.5 ${isMini ? "text-[6px] line-clamp-2" : "text-xs"}`}>
+                  <p className={`text-slate-700 text-justify font-normal mt-0.5 pl-2 sm:pl-3 indent-2 sm:indent-3 ${isMini ? "text-[6px] line-clamp-2" : "text-xs"}`}>
                     {img.explanation}
                   </p>
                 )}
@@ -2178,7 +2224,7 @@ export function ReportWizard({
           laprakData: {
             images: laprakImages,
             codes: laprakCodes,
-            bahan: laprakBahan.split(",").map((s) => s.trim()).filter(Boolean),
+            bahan: parseToolsAndMaterials(laprakBahan, parseToolsAndMaterials(getDefaultToolsAndMaterials(praktikum.nama, mingguKe, materi))),
             langkah: formatLangkahKerja(laprakLangkah).split("\n").filter(Boolean),
             analisis: laprakAnalisis,
             ulasan: laprakUlasan

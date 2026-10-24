@@ -7,7 +7,7 @@ import uuid
 import subprocess
 from datetime import datetime
 from docx import Document
-from docx.shared import Pt, Inches
+from docx.shared import Pt, Inches, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
@@ -181,10 +181,122 @@ def format_font(run, size=11, name="Calibri", bold=False, italic=False, caps=Fal
     if caps:
         run.font.all_caps = True
 
-def insert_image_proportional(paragraph, image_path, max_w_in=5.2, max_h_in=6.0):
+def apply_a4_and_margins(doc):
+    """
+    Strictly forces all sections to A4 standard (21.0 cm x 29.7 cm)
+    and uniform 3.0 cm margins on all four sides (Top, Bottom, Left, Right).
+    """
+    for sec in doc.sections:
+        sec.page_width = Cm(21.0)
+        sec.page_height = Cm(29.7)
+        sec.top_margin = Cm(3.0)
+        sec.bottom_margin = Cm(3.0)
+        sec.left_margin = Cm(3.0)
+        sec.right_margin = Cm(3.0)
+
+def format_and_center_cover(doc):
+    """
+    Fixes cover alignment and logo centering.
+    Removes legacy XML right-indent (<w:ind w:right='...'>) that pushed cover text to the right,
+    resets left/right indents to 0, sets paragraph alignment to CENTER,
+    and updates logo drawing positionH to <wp:align>center</wp:align>.
+    """
+    for idx in range(min(27, len(doc.paragraphs))):
+        p = doc.paragraphs[idx]
+        for elem in p._element.iter():
+            if elem.tag.endswith('positionH'):
+                for child in list(elem):
+                    elem.remove(child)
+                align_elem = OxmlElement('wp:align')
+                align_elem.text = 'center'
+                elem.append(align_elem)
+        if p._element.pPr is not None:
+            ind = p._element.pPr.find(qn('w:ind'))
+            if ind is not None:
+                p._element.pPr.remove(ind)
+        p.paragraph_format.left_indent = Cm(0)
+        p.paragraph_format.right_indent = Cm(0)
+        p.paragraph_format.first_line_indent = Cm(0)
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+def add_clean_justified_paragraphs(doc, text, space_before=Pt(2), space_after=Pt(5), line_spacing=1.15, font_size=11, font_name="Calibri", left_indent=None, first_line_indent=None):
+    """
+    Splits text by newlines into individual true paragraphs (<w:p>) to prevent Word's
+    soft-break justification bug (where lines ending with a manual break get words
+    stretched awkwardly across the margin).
+    """
+    if not text:
+        return []
+    raw_paras = [p.strip() for p in re.split(r'\r?\n', str(text)) if p.strip()]
+    created = []
+    for p_txt in raw_paras:
+        clean_txt = re.sub(r'[ \t]+', ' ', p_txt)
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        p.paragraph_format.space_before = space_before
+        p.paragraph_format.space_after = space_after
+        p.paragraph_format.line_spacing = line_spacing
+        if left_indent is not None:
+            p.paragraph_format.left_indent = left_indent
+        if first_line_indent is not None:
+            p.paragraph_format.first_line_indent = first_line_indent
+        r = p.add_run(clean_txt)
+        format_font(r, size=font_size, name=font_name)
+        created.append(p)
+    return created
+
+def parse_bahan_list(raw_bahan, default_tools=None):
+    """
+    Intelligently parses tools/materials.
+    Avoids chopping items with internal commas or trailing connectors
+    (e.g. 'Pustaka/Modul: Item 1, Item 2, dan Item 3') into broken sub-bullets.
+    """
+    if not raw_bahan:
+        return default_tools or []
+        
+    if isinstance(raw_bahan, str):
+        s = raw_bahan.strip()
+        if s.startswith("[") and s.endswith("]"):
+            try:
+                raw_bahan = json.loads(s)
+            except Exception:
+                pass
+
+    raw_items = []
+    if isinstance(raw_bahan, list):
+        raw_items = [str(b).strip() for b in raw_bahan if str(b).strip()]
+    else:
+        raw_str = str(raw_bahan).strip()
+        if "\n" in raw_str:
+            raw_items = [line.strip() for line in raw_str.split("\n") if line.strip()]
+        else:
+            raw_items = [b.strip() for b in raw_str.split(",") if b.strip()]
+
+    merged = []
+    for item in raw_items:
+        clean_item = re.sub(r'^(?:[0-9]+[\.\)]\s*|[a-zA-Z][\.\)]\s*|[•\-\*]\s*)', '', item).strip()
+        clean_item = clean_item.strip('"\'')
+        if not clean_item:
+            continue
+        
+        lower_item = clean_item.lower()
+        is_continuation = False
+        if lower_item.startswith(('dan ', 'serta ', 'and ', '& ')):
+            is_continuation = True
+        elif merged and (':' not in clean_item) and (':' in merged[-1]):
+            is_continuation = True
+
+        if is_continuation and merged:
+            merged[-1] = f"{merged[-1]}, {clean_item}"
+        else:
+            merged.append(clean_item)
+            
+    return merged if merged else (default_tools or [])
+
+def insert_image_proportional(paragraph, image_path, max_w_in=5.5, max_h_in=5.5):
     """
     Inserts image into paragraph with proportional dimensions,
-    ensuring it does NOT exceed max_w_in and max_h_in.
+    ensuring it does NOT exceed max_w_in and max_h_in on A4 page.
     """
     if not image_path or not os.path.exists(image_path):
         return None
@@ -216,10 +328,10 @@ def insert_image_proportional(paragraph, image_path, max_w_in=5.2, max_h_in=6.0)
         run.add_picture(image_path, width=Inches(w_in))
     return paragraph
 
-def set_table_width_exact_cm(table, width_cm=11.5):
+def set_table_width_exact_cm(table, width_cm=14.0, left_indent_cm=0.5):
     """
-    Strictly forces table width to exactly width_cm (default 11.5 cm),
-    disables autofit, and aligns table to LEFT (mengikuti posisi teks paragraf).
+    Strictly forces table width to width_cm (default 14.0 cm on A4)
+    with left indent left_indent_cm (0.5 cm) matching the level hierarchy.
     """
     width_dxa = int((width_cm / 2.54) * 1440)
     table.autofit = False
@@ -231,6 +343,15 @@ def set_table_width_exact_cm(table, width_cm=11.5):
         tblPr.append(tblW)
     tblW.set(qn('w:type'), 'dxa')
     tblW.set(qn('w:w'), str(width_dxa))
+
+    if left_indent_cm is not None:
+        indent_dxa = int((left_indent_cm / 2.54) * 1440)
+        tblInd = tblPr.find(qn('w:tblInd'))
+        if tblInd is None:
+            tblInd = OxmlElement('w:tblInd')
+            tblPr.append(tblInd)
+        tblInd.set(qn('w:type'), 'dxa')
+        tblInd.set(qn('w:w'), str(indent_dxa))
 
     for row in table.rows:
         trPr = row._tr.get_or_add_trPr()
@@ -245,14 +366,14 @@ def set_table_width_exact_cm(table, width_cm=11.5):
             tcW.set(qn('w:type'), 'dxa')
             tcW.set(qn('w:w'), str(width_dxa))
 
-def create_code_table(doc, code_text, width_cm=11.5):
+def create_code_table(doc, code_text, width_cm=14.0, left_indent_cm=0.5):
     """
-    Creates an independent 1x1 table grid for code snippet with exact 11.5 cm width,
-    aligned to left, with Courier New 10pt font.
+    Creates an independent 1x1 table grid for code snippet with exact width (14.0 cm),
+    aligned to left with 0.5 cm indent, with Courier New 10pt font.
     """
     table = doc.add_table(rows=1, cols=1)
     table.style = 'Table Grid'
-    set_table_width_exact_cm(table, width_cm)
+    set_table_width_exact_cm(table, width_cm=width_cm, left_indent_cm=left_indent_cm)
     cell = table.cell(0, 0)
     p = cell.paragraphs[0]
     p.paragraph_format.space_before = Pt(2)
@@ -261,7 +382,6 @@ def create_code_table(doc, code_text, width_cm=11.5):
     run = p.add_run(code_text)
     run.font.name = 'Courier New'
     run.font.size = Pt(10.0)
-    # Ensure Word explicitly applies Courier New via rFonts
     rPr = run._r.get_or_add_rPr()
     rFonts = rPr.get_or_add_rFonts()
     rFonts.set(qn('w:ascii'), 'Courier New')
@@ -269,16 +389,34 @@ def create_code_table(doc, code_text, width_cm=11.5):
     rFonts.set(qn('w:cs'), 'Courier New')
     return table
 
+def clean_question_text(q_item):
+    """
+    Cleans any existing numbering/bullet prefixes from question string
+    (e.g., '1. A. ', 'A. ', '1) ', '• ') so re-indexing does not duplicate prefixes.
+    """
+    cleaned = str(q_item).strip()
+    while True:
+        prev = cleaned
+        cleaned = re.sub(r'^(?:[0-9]+[\.\)]\s*|[a-zA-Z][\.\)]\s*|[•\-\*]\s*)', '', cleaned).strip()
+        if cleaned == prev:
+            break
+    return cleaned
+
 def clean_step_line(line):
     """
     Ensures points use '-' strictly.
-    Strips leading '1. ', '1) ', '• ', '* ', '- ' etc.
+    Strips leading '1. ', '1) ', '• ', '* ', '- ', quotes, etc.
     """
-    line = str(line).strip()
+    line = str(line).strip().strip('"\'')
     if not line:
         return ""
-    cleaned = re.sub(r'^(?:\d+[\.\)]\s*|[a-zA-Z][\.\)]\s*|[•\-\*]\s*)', '', line).strip()
-    return f"- {cleaned}" if cleaned else ""
+    while True:
+        prev = line
+        line = re.sub(r'^(?:\d+[\.\)]\s*|[a-zA-Z][\.\)]\s*|[•\-\*]\s*)', '', line).strip()
+        line = line.strip('"\'').strip()
+        if line == prev:
+            break
+    return f"- {line}" if line else ""
 
 def clean_caption_text(cap):
     """
@@ -299,6 +437,7 @@ def convert_docx_to_pdf(docx_path, pdf_path):
         f"$word = New-Object -ComObject Word.Application; "
         f"$word.Visible = $false; "
         f"$word.DisplayAlerts = 0; "
+        f"$word.ScreenUpdating = $false; "
         f"try {{ "
         f"  $doc = $word.Documents.Open('{abs_docx}', $false, $true); "
         f"  $doc.SaveAs([ref]'{abs_pdf}', [ref]17); "
@@ -313,7 +452,7 @@ def convert_docx_to_pdf(docx_path, pdf_path):
             ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
             capture_output=True,
             text=True,
-            timeout=25
+            timeout=50
         )
         return os.path.exists(pdf_path)
     except Exception as e:
@@ -423,7 +562,13 @@ def generate_report(user_input):
 
     doc = Document(TEMPLATE_PATH)
     
-    # 1. Identitas Laporan & Mahasiswa
+    # 0. Enforce A4 standard (21.0cm x 29.7cm) and uniform 3.0cm margins on all 4 sides
+    apply_a4_and_margins(doc)
+
+    # 1. Format and perfectly center cover text & logo (clears legacy indent and centers anchor)
+    format_and_center_cover(doc)
+
+    # 2. Identitas Laporan & Mahasiswa
     nama_laporan = user_input.get('nama_laporan') or user_input.get('namaLaporan') or "Praktikum Strategi Algoritma"
     materi = user_input.get('materi') or "Laporan Praktikum"
     tanggal = user_input.get('tanggal') or datetime.now().strftime("%A %d %B %Y")
@@ -440,7 +585,7 @@ def generate_report(user_input):
     posttest_images = normalize_images(user_input, 'images_posttest', 'img_posttest', 'posttest')
 
     # =========================================================================
-    # A. COVER - Font Calibri, Ukuran 11 pt, Tanpa Duplikasi
+    # A. COVER - Font Calibri, Ukuran 11 pt, Simetris & Terpusat Sempurna
     # =========================================================================
     # Paragraph 2: LAPORAN PRAKTIKUM
     if len(doc.paragraphs) > 2:
@@ -510,13 +655,16 @@ def generate_report(user_input):
 
     # =========================================================================
     # B. PRETEST
-    # - Judul "Pre Test": Calibri 11 Bold
-    # - Pertanyaan: Calibri 11 TIDAK BOLD, HANYA Abjad Kapital (A, B, C...)
+    # - Judul "Pre Test": Calibri 11 Bold, Level 1 (Indent 0)
+    # - Pertanyaan: Calibri 11 TIDAK BOLD, Level 2 (Indent 0.5 cm)
     # - "LAMPIRAN" dan "Lampiran A, B, dan C": TIDAK BOLD
     # - 1 Gambar = 1 Halaman Lampiran Rapi
     # =========================================================================
     if len(doc.paragraphs) > 27:
         doc.paragraphs[27].text = ""
+        doc.paragraphs[27].paragraph_format.left_indent = Cm(0)
+        doc.paragraphs[27].paragraph_format.right_indent = Cm(0)
+        doc.paragraphs[27].paragraph_format.first_line_indent = Cm(0)
         run_pt_title = doc.paragraphs[27].add_run("Pre Test")
         format_font(run_pt_title, size=11, name="Calibri", bold=True)
         doc.paragraphs[27].alignment = WD_ALIGN_PARAGRAPH.LEFT
@@ -533,17 +681,26 @@ def generate_report(user_input):
     q_formatted = []
     for idx_q, q_item in enumerate(raw_lines):
         letter = chr(65 + idx_q) if idx_q < 26 else f"Q{idx_q+1}"
-        cleaned = re.sub(r'^(?:[0-9]+[\.\)]\s*|[a-zA-Z][\.\)]\s*|[•\-\*]\s*)', '', q_item).strip()
+        cleaned = clean_question_text(q_item)
         q_formatted.append(f"{letter}. {cleaned}")
 
     # Bersihkan placeholder lama pertanyaan di template (p29..p32)
+    # serta hilangkan numPr bawaan template agar Word tidak menambahkan list A., B. otomatis
     for i in [29, 30, 31, 32]:
         if len(doc.paragraphs) > i:
             doc.paragraphs[i].text = ""
+            pPr = doc.paragraphs[i]._p.pPr
+            if pPr is not None:
+                numPr = pPr.find(qn('w:numPr'))
+                if numPr is not None:
+                    pPr.remove(numPr)
 
-    # Isi pertanyaan Pretest (Calibri 11 TIDAK BOLD)
+    # Isi pertanyaan Pretest (Calibri 11 TIDAK BOLD, Level 2 Indent 0.5 cm)
     if len(doc.paragraphs) > 29 and q_formatted:
         doc.paragraphs[29].text = ""
+        doc.paragraphs[29].paragraph_format.left_indent = Cm(0.5)
+        doc.paragraphs[29].paragraph_format.right_indent = Cm(0)
+        doc.paragraphs[29].paragraph_format.first_line_indent = Cm(0)
         doc.paragraphs[29].paragraph_format.space_before = Pt(2)
         doc.paragraphs[29].paragraph_format.space_after = Pt(2)
         r_q0 = doc.paragraphs[29].add_run(q_formatted[0])
@@ -554,6 +711,9 @@ def generate_report(user_input):
             target_slot = 29 + q_idx
             if target_slot < 33 and len(doc.paragraphs) > target_slot:
                 doc.paragraphs[target_slot].text = ""
+                doc.paragraphs[target_slot].paragraph_format.left_indent = Cm(0.5)
+                doc.paragraphs[target_slot].paragraph_format.right_indent = Cm(0)
+                doc.paragraphs[target_slot].paragraph_format.first_line_indent = Cm(0)
                 doc.paragraphs[target_slot].paragraph_format.space_before = Pt(2)
                 doc.paragraphs[target_slot].paragraph_format.space_after = Pt(2)
                 r_qk = doc.paragraphs[target_slot].add_run(q_text)
@@ -561,6 +721,9 @@ def generate_report(user_input):
                 doc.paragraphs[target_slot].alignment = WD_ALIGN_PARAGRAPH.LEFT
             else:
                 p_extra_q = doc.paragraphs[33].insert_paragraph_before()
+                p_extra_q.paragraph_format.left_indent = Cm(0.5)
+                p_extra_q.paragraph_format.right_indent = Cm(0)
+                p_extra_q.paragraph_format.first_line_indent = Cm(0)
                 p_extra_q.paragraph_format.space_before = Pt(2)
                 p_extra_q.paragraph_format.space_after = Pt(2)
                 r_qk = p_extra_q.add_run(q_text)
@@ -585,7 +748,6 @@ def generate_report(user_input):
         doc.paragraphs[34].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     # Hapus seluruh tabel lama template dan seluruh paragraf legacy template (>= 35)
-    # untuk mencegah teks duplikat, strip kosong '-', atau huruf melayang 'B.'
     for tbl in list(doc.tables):
         tbl._element.getparent().remove(tbl._element)
 
@@ -604,7 +766,7 @@ def generate_report(user_input):
 
             p_img_box = doc.add_paragraph()
             p_img_box.paragraph_format.keep_with_next = True
-            insert_image_proportional(p_img_box, p_img["path"], max_w_in=5.2, max_h_in=6.6)
+            insert_image_proportional(p_img_box, p_img["path"], max_w_in=5.5, max_h_in=6.6)
 
             p_cap_box = doc.add_paragraph()
             p_cap_box.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -617,60 +779,64 @@ def generate_report(user_input):
 
     # =========================================================================
     # C. LAPRAK (Hasil Praktikum)
-    # - II. Hasil Praktikum (Calibri 11 Bold)
-    # - Sub-bab wajib huruf abjad besar & BOLD:
-    #   A. Alat dan Bahan
-    #   B. Langkah Kerja
-    #   C. Implementasi Kode Program (KODE DULU SEMUA, LEBAR TABEL 11.5 CM)
-    #   D. Implementasi Screenshot (SEMUA GAMBAR MENYUSUL, CAPTION MENEMPEL)
-    #   E. Analisis dan Ulasan
+    # - Level 1: II. Hasil Praktikum (Calibri 11 Bold, left_indent = 0)
+    # - Level 2: Sub-bab A..F (Calibri 11 Bold, left_indent = 0.5 cm)
+    #   A. Alat dan Bahan (Bullet '-' left_indent = 1.0 cm, hanging -0.4 cm)
+    #   B. Langkah Kerja (Bullet '-' left_indent = 1.0 cm, hanging -0.4 cm)
+    #   C. Implementasi Kode Program (Tabel 14.0 cm, left_indent = 0.5 cm)
+    #   D. Implementasi Screenshot (Gambar & Caption terpusat, pembahasan indent 0.5 cm)
+    #   E. Analisis Praktikum (Paragraf clean justify, indent 0.5 cm, first_line 0.75 cm)
+    #   F. Ulasan Praktikum (5 Pilar ulasan terstruktur, indent 0.5 cm)
     # =========================================================================
-    # Page Break ke Bagian Laprak
     pb_lap = doc.add_paragraph()
     pb_lap.paragraph_format.space_before = Pt(0)
     pb_lap.paragraph_format.space_after = Pt(0)
     pb_lap.add_run().add_break(WD_BREAK.PAGE)
 
     p_hp = doc.add_paragraph()
+    p_hp.paragraph_format.left_indent = Cm(0)
     p_hp.paragraph_format.space_before = Pt(6)
     p_hp.paragraph_format.space_after = Pt(4)
     r_hp = p_hp.add_run("II.  Hasil Praktikum")
     format_font(r_hp, size=11, name="Calibri", bold=True)
 
-    # A. Alat dan Bahan (BOLD)
+    # A. Alat dan Bahan (Level 2: Indent 0.5 cm)
     p_ab_h = doc.add_paragraph()
+    p_ab_h.paragraph_format.left_indent = Cm(0.5)
     p_ab_h.paragraph_format.space_before = Pt(6)
     p_ab_h.paragraph_format.space_after = Pt(2)
     r_ab_h = p_ab_h.add_run("A. Alat dan Bahan")
     format_font(r_ab_h, size=11, name="Calibri", bold=True)
 
     laprak_bahan_raw = user_input.get('laprak_bahan') or user_input.get('laprakBahan')
-    bahan_list = []
-    if laprak_bahan_raw:
-        if isinstance(laprak_bahan_raw, list):
-            bahan_list = [str(b).strip() for b in laprak_bahan_raw if str(b).strip()]
-        else:
-            bahan_list = [b.strip() for b in str(laprak_bahan_raw).split(",") if b.strip()]
-    if not bahan_list:
-        bahan_list = get_dynamic_default_tools(nama_laporan, materi)
+    bahan_list = parse_bahan_list(laprak_bahan_raw, get_dynamic_default_tools(nama_laporan, materi))
 
-    for b_item in bahan_list:
-        clean_b = re.sub(r'^(?:[0-9]+[\.\)]\s*|[a-zA-Z][\.\)]\s*|[•\-\*]\s*)', '', b_item).strip()
+    for clean_b in bahan_list:
         p_b = doc.add_paragraph()
+        p_b.paragraph_format.left_indent = Cm(1.0)
+        p_b.paragraph_format.first_line_indent = Cm(-0.4)
         p_b.paragraph_format.space_before = Pt(1)
         p_b.paragraph_format.space_after = Pt(1.5)
         p_b.paragraph_format.line_spacing = 1.15
         r_b = p_b.add_run(f"- {clean_b}")
         format_font(r_b, size=11, name="Calibri")
 
-    # B. Langkah Kerja (BOLD, Strict Dash Poin "-")
+    # B. Langkah Kerja (Level 2: Indent 0.5 cm)
     p_lk_h = doc.add_paragraph()
+    p_lk_h.paragraph_format.left_indent = Cm(0.5)
     p_lk_h.paragraph_format.space_before = Pt(8)
     p_lk_h.paragraph_format.space_after = Pt(2)
     r_lk_h = p_lk_h.add_run("B. Langkah Kerja")
     format_font(r_lk_h, size=11, name="Calibri", bold=True)
 
     laprak_langkah_raw = user_input.get('laprak_langkah') or user_input.get('laprakLangkah')
+    if isinstance(laprak_langkah_raw, str):
+        s = laprak_langkah_raw.strip()
+        if s.startswith("[") and s.endswith("]"):
+            try:
+                laprak_langkah_raw = json.loads(s)
+            except Exception:
+                pass
     langkah_list = []
     if laprak_langkah_raw:
         if isinstance(laprak_langkah_raw, list):
@@ -686,14 +852,17 @@ def generate_report(user_input):
 
     for l_item in langkah_list:
         p_l = doc.add_paragraph()
+        p_l.paragraph_format.left_indent = Cm(1.0)
+        p_l.paragraph_format.first_line_indent = Cm(-0.4)
         p_l.paragraph_format.space_before = Pt(1)
         p_l.paragraph_format.space_after = Pt(1.5)
         p_l.paragraph_format.line_spacing = 1.15
         r_l = p_l.add_run(l_item)
         format_font(r_l, size=11, name="Calibri")
 
-    # C. Implementasi Kode Program (BOLD) - KODE DULU SEMUA
+    # C. Implementasi Kode Program (Level 2: Indent 0.5 cm)
     p_kp_h = doc.add_paragraph()
+    p_kp_h.paragraph_format.left_indent = Cm(0.5)
     p_kp_h.paragraph_format.space_before = Pt(8)
     p_kp_h.paragraph_format.space_after = Pt(2)
     r_kp_h = p_kp_h.add_run("C. Implementasi Kode Program")
@@ -702,24 +871,19 @@ def generate_report(user_input):
     if laprak_codes:
         for c_idx, c_item in enumerate(laprak_codes, start=1):
             p_code_title = doc.add_paragraph()
+            p_code_title.paragraph_format.left_indent = Cm(0.5)
             p_code_title.paragraph_format.space_before = Pt(6)
             p_code_title.paragraph_format.space_after = Pt(2)
             p_code_title.paragraph_format.keep_with_next = True
             r_ct = p_code_title.add_run(f"Tabel Kode 2.{c_idx}: {c_item.get('title', f'Program {c_idx}')}")
             format_font(r_ct, size=11, name="Calibri", bold=True)
 
-            # Tabel Kode Lebar Konsisten Tepat 11.5 cm
-            create_code_table(doc, c_item.get("code", ""), width_cm=11.5)
+            # Tabel Kode Lebar Konsisten Tepat 14.0 cm terindentasi 0.5 cm
+            create_code_table(doc, c_item.get("code", ""), width_cm=14.0, left_indent_cm=0.5)
 
-    # Set margin dokumen standar akademik FTI UAD: Left 4.0 cm, Top 3.0 cm, Right 3.0 cm, Bottom 3.0 cm
-    for s_idx, sec in enumerate(doc.sections):
-        sec.top_margin = Inches(3.0 / 2.54)
-        sec.bottom_margin = Inches(3.0 / 2.54)
-        sec.left_margin = Inches(4.0 / 2.54)
-        sec.right_margin = Inches(3.0 / 2.54)
-
-    # D. Implementasi Screenshot (BOLD) - SEMUA GAMBAR MENYUSUL DENGAN PEMBAHASAN LENGKAP (SKOR 5)
+    # D. Implementasi Screenshot (Level 2: Indent 0.5 cm)
     p_is_h = doc.add_paragraph()
+    p_is_h.paragraph_format.left_indent = Cm(0.5)
     p_is_h.paragraph_format.space_before = Pt(10)
     p_is_h.paragraph_format.space_after = Pt(2)
     r_is_h = p_is_h.add_run("D. Implementasi Screenshot")
@@ -729,7 +893,7 @@ def generate_report(user_input):
         for l_idx, l_img in enumerate(laprak_images, start=1):
             p_img_l = doc.add_paragraph()
             p_img_l.paragraph_format.keep_with_next = True
-            insert_image_proportional(p_img_l, l_img["path"], max_w_in=5.2, max_h_in=4.5)
+            insert_image_proportional(p_img_l, l_img["path"], max_w_in=5.5, max_h_in=4.8)
 
             p_cap_l = doc.add_paragraph()
             p_cap_l.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -741,23 +905,18 @@ def generate_report(user_input):
             r_cap_l = p_cap_l.add_run(f"Gambar 2.{l_idx}: {cap_l}")
             format_font(r_cap_l, size=10, name="Calibri", italic=True)
 
-            # Pembahasan Kontekstual Hasil Screenshot (Alur & Luaran Terminal - SKOR 5)
+            # Pembahasan Kontekstual Hasil Screenshot (Bebas Bug Justify Spasi Renggang)
             exp_text = str(l_img.get("explanation") or "").strip()
             if not exp_text:
                 exp_text = f"Berdasarkan tangkapan layar Gambar 2.{l_idx}, alur eksekusi program diawali dengan inisialisasi lingkungan kerja dan eksekusi instruksi logika kode program. Pada luaran terminal/konsol pengujian, sistem menampilkan keluaran hasil pengujian yang terstruktur dan valid tanpa adanya galat runtime."
 
-            p_exp = doc.add_paragraph()
-            p_exp.paragraph_format.space_before = Pt(2)
-            p_exp.paragraph_format.space_after = Pt(6)
-            p_exp.paragraph_format.line_spacing = 1.15
-            p_exp.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-            r_exp = p_exp.add_run(exp_text)
-            format_font(r_exp, size=11, name="Calibri")
+            add_clean_justified_paragraphs(doc, exp_text, space_before=Pt(2), space_after=Pt(6), left_indent=Cm(0.5), first_line_indent=Cm(0.75))
 
     # =========================================================================
-    # E. Analisis Praktikum (Dihasilkan oleh AI)
+    # E. Analisis Praktikum (Level 2: Indent 0.5 cm)
     # =========================================================================
     p_an_h = doc.add_paragraph()
+    p_an_h.paragraph_format.left_indent = Cm(0.5)
     p_an_h.paragraph_format.space_before = Pt(10)
     p_an_h.paragraph_format.space_after = Pt(2)
     r_an_h = p_an_h.add_run("E. Analisis Praktikum")
@@ -768,23 +927,13 @@ def generate_report(user_input):
     if not analisis_str:
         analisis_str = f"Berdasarkan pengujian dan implementasi program pada modul \"{materi}\", analisis teknis membuktikan bahwa struktur algoritma dan pemanggilan fungsi berjalan secara deterministik. Alur eksekusi kode mampu menangani masukan parameter uji secara valid dan menghasilkan keluaran yang konsisten dengan spesifikasi laboratorium tanpa kendala eksepsi memori atau runtime."
 
-    an_paragraphs = [p.strip() for p in re.split(r'\n{2,}|\r\n\r\n', analisis_str) if p.strip()]
-    if not an_paragraphs:
-        an_paragraphs = [analisis_str]
-
-    for a_para in an_paragraphs:
-        p_an = doc.add_paragraph()
-        p_an.paragraph_format.space_before = Pt(2)
-        p_an.paragraph_format.space_after = Pt(4)
-        p_an.paragraph_format.line_spacing = 1.15
-        p_an.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        r_an = p_an.add_run(a_para)
-        format_font(r_an, size=11, name="Calibri")
+    add_clean_justified_paragraphs(doc, analisis_str, space_before=Pt(2), space_after=Pt(4), left_indent=Cm(0.5), first_line_indent=Cm(0.75))
 
     # =========================================================================
-    # F. Ulasan Praktikum (Diinput secara Manual oleh Mahasiswa / User)
+    # F. Ulasan Praktikum (Level 2: Indent 0.5 cm)
     # =========================================================================
     p_ul_h = doc.add_paragraph()
+    p_ul_h.paragraph_format.left_indent = Cm(0.5)
     p_ul_h.paragraph_format.space_before = Pt(10)
     p_ul_h.paragraph_format.space_after = Pt(2)
     r_ul_h = p_ul_h.add_run("F. Ulasan Praktikum")
@@ -807,31 +956,31 @@ def generate_report(user_input):
         ]
 
     for block in blocks:
-        p_ul = doc.add_paragraph()
-        p_ul.paragraph_format.space_before = Pt(2)
-        p_ul.paragraph_format.space_after = Pt(4)
-        p_ul.paragraph_format.line_spacing = 1.15
-        p_ul.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-
-        # Format judul pilar tebal jika diawali "1. Pembelajaran: ..."
         m_head = re.match(r'^(\d+\.\s*[^:\n]+:)\s*([\s\S]*)', block)
         if m_head:
             heading_txt = m_head.group(1).strip() + " "
             body_txt = m_head.group(2).strip()
+            p_ul = doc.add_paragraph()
+            p_ul.paragraph_format.left_indent = Cm(0.5)
+            p_ul.paragraph_format.first_line_indent = Cm(0.5)
+            p_ul.paragraph_format.space_before = Pt(2)
+            p_ul.paragraph_format.space_after = Pt(4)
+            p_ul.paragraph_format.line_spacing = 1.15
+            p_ul.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
             r_head = p_ul.add_run(heading_txt)
             format_font(r_head, size=11, name="Calibri", bold=True)
-            r_body = p_ul.add_run(body_txt)
+            r_body = p_ul.add_run(re.sub(r'[ \t]+', ' ', body_txt))
             format_font(r_body, size=11, name="Calibri", bold=False)
         else:
-            r_ul = p_ul.add_run(block)
-            format_font(r_ul, size=11, name="Calibri")
+            add_clean_justified_paragraphs(doc, block, space_before=Pt(2), space_after=Pt(4), left_indent=Cm(0.5), first_line_indent=Cm(0.75))
 
     # =========================================================================
     # D. POSTTEST
-    # - III. Post Test (Calibri 11 Bold)
-    # - A. Tujuan Pembuatan Program (BOLD)
-    # - B. Implementasi Kode Program (BOLD, TABEL 11.5 CM)
-    # - C. Implementasi Screenshot (BOLD, GAMBAR TERPUSAT, CAPTION MENEMPEL, PEMBAHASAN LENGKAP)
+    # - Level 1: III. Post Test (Calibri 11 Bold, left_indent = 0)
+    # - Level 2: Sub-bab A..C (Calibri 11 Bold, left_indent = 0.5 cm)
+    #   A. Tujuan Pembuatan Program (Indent 0.5 cm, first_line 0.75 cm)
+    #   B. Implementasi Kode Program (Tabel 14.0 cm, left_indent = 0.5 cm)
+    #   C. Implementasi Screenshot (Gambar & Caption terpusat, pembahasan indent 0.5 cm)
     # =========================================================================
     pb_post = doc.add_paragraph()
     pb_post.paragraph_format.space_before = Pt(0)
@@ -839,13 +988,15 @@ def generate_report(user_input):
     pb_post.add_run().add_break(WD_BREAK.PAGE)
 
     p_post_h = doc.add_paragraph()
+    p_post_h.paragraph_format.left_indent = Cm(0)
     p_post_h.paragraph_format.space_before = Pt(6)
     p_post_h.paragraph_format.space_after = Pt(4)
     r_post_h = p_post_h.add_run("III. Post Test")
     format_font(r_post_h, size=11, name="Calibri", bold=True)
 
-    # A. Tujuan Pembuatan Program (BOLD)
+    # A. Tujuan Pembuatan Program (Level 2: Indent 0.5 cm)
     p_pt_tj = doc.add_paragraph()
+    p_pt_tj.paragraph_format.left_indent = Cm(0.5)
     p_pt_tj.paragraph_format.space_before = Pt(6)
     p_pt_tj.paragraph_format.space_after = Pt(2)
     r_pt_tj = p_pt_tj.add_run("A. Tujuan Pembuatan Program")
@@ -860,16 +1011,11 @@ def generate_report(user_input):
         ]
 
     for t_item in tj_lines:
-        p_tj = doc.add_paragraph()
-        p_tj.paragraph_format.space_before = Pt(2)
-        p_tj.paragraph_format.space_after = Pt(4)
-        p_tj.paragraph_format.line_spacing = 1.15
-        p_tj.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        r_tj = p_tj.add_run(t_item)
-        format_font(r_tj, size=11, name="Calibri")
+        add_clean_justified_paragraphs(doc, t_item, space_before=Pt(2), space_after=Pt(4), left_indent=Cm(0.5), first_line_indent=Cm(0.75))
 
-    # B. Implementasi Kode Program (BOLD) - Tabel 11.5 cm
+    # B. Implementasi Kode Program (Level 2: Indent 0.5 cm)
     p_pt_kp = doc.add_paragraph()
+    p_pt_kp.paragraph_format.left_indent = Cm(0.5)
     p_pt_kp.paragraph_format.space_before = Pt(8)
     p_pt_kp.paragraph_format.space_after = Pt(2)
     r_pt_kp = p_pt_kp.add_run("B. Implementasi Kode Program")
@@ -878,17 +1024,19 @@ def generate_report(user_input):
     if posttest_codes:
         for cp_idx, cp_item in enumerate(posttest_codes, start=1):
             p_cpt = doc.add_paragraph()
+            p_cpt.paragraph_format.left_indent = Cm(0.5)
             p_cpt.paragraph_format.space_before = Pt(6)
             p_cpt.paragraph_format.space_after = Pt(2)
             p_cpt.paragraph_format.keep_with_next = True
             r_cpt = p_cpt.add_run(f"Tabel Kode 3.{cp_idx}: {cp_item.get('title', f'Program Posttest {cp_idx}')}")
             format_font(r_cpt, size=11, name="Calibri", bold=True)
 
-            # Tabel Kode Lebar Konsisten Tepat 11.5 cm
-            create_code_table(doc, cp_item.get("code", ""), width_cm=11.5)
+            # Tabel Kode Lebar Konsisten Tepat 14.0 cm terindentasi 0.5 cm
+            create_code_table(doc, cp_item.get("code", ""), width_cm=14.0, left_indent_cm=0.5)
 
-    # C. Implementasi Screenshot (BOLD) - Gambar Terpusat & Menempel Caption & Pembahasan
+    # C. Implementasi Screenshot (Level 2: Indent 0.5 cm)
     p_pt_is = doc.add_paragraph()
+    p_pt_is.paragraph_format.left_indent = Cm(0.5)
     p_pt_is.paragraph_format.space_before = Pt(10)
     p_pt_is.paragraph_format.space_after = Pt(2)
     r_pt_is = p_pt_is.add_run("C. Implementasi Screenshot")
@@ -898,7 +1046,7 @@ def generate_report(user_input):
         for pi_idx, pi_img in enumerate(posttest_images, start=1):
             p_img_p = doc.add_paragraph()
             p_img_p.paragraph_format.keep_with_next = True
-            insert_image_proportional(p_img_p, pi_img["path"], max_w_in=5.2, max_h_in=4.5)
+            insert_image_proportional(p_img_p, pi_img["path"], max_w_in=5.5, max_h_in=4.8)
 
             p_cap_p = doc.add_paragraph()
             p_cap_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -910,23 +1058,15 @@ def generate_report(user_input):
             r_cap_p = p_cap_p.add_run(f"Gambar 3.{pi_idx}: {cap_p}")
             format_font(r_cap_p, size=10, name="Calibri", italic=True)
 
-            # Pembahasan Kontekstual Output Posttest (Alur & Luaran Terminal - SKOR 5)
+            # Pembahasan Kontekstual Output Posttest (Bebas Bug Justify Spasi Renggang)
             exp_p_text = str(pi_img.get("explanation") or "").strip()
             if not exp_p_text:
                 exp_p_text = f"Berdasarkan tangkapan layar Gambar 3.{pi_idx}, alur eksekusi program tugas mandiri posttest berjalan secara independen untuk mengolah data kasus uji. Luaran terminal membuktikan bahwa keluaran program telah memenuhi kriteria spesifikasi masalah tanpa mengalami galat eksekusi."
 
-            p_exp_p = doc.add_paragraph()
-            p_exp_p.paragraph_format.space_before = Pt(2)
-            p_exp_p.paragraph_format.space_after = Pt(6)
-            p_exp_p.paragraph_format.line_spacing = 1.15
-            p_exp_p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-            r_exp_p = p_exp_p.add_run(exp_p_text)
-            format_font(r_exp_p, size=11, name="Calibri")
+            add_clean_justified_paragraphs(doc, exp_p_text, space_before=Pt(2), space_after=Pt(6), left_indent=Cm(0.5), first_line_indent=Cm(0.75))
 
-
-    # =========================================================================
-    # E. Output Penamaan File & Dokumen
-    # =========================================================================
+    # Re-verify A4 and uniform 3.0cm margins on all sections before saving
+    apply_a4_and_margins(doc)
     custom_name = user_input.get('final_filename') or user_input.get('finalFilename')
     if custom_name:
         clean_name = re.sub(r'[^a-zA-Z0-9_-]', '_', os.path.splitext(custom_name)[0].strip())
